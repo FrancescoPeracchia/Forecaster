@@ -41,8 +41,9 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
              **kwargs: specific to concrete implementation
         """
         pass
-
-    def forward_test(self, imgs, img_metas, eval=None, **kwargs):
+    
+    @abstractmethod
+    def forward_test(self, list_image,list_id, targets, **kwargs):
         """
         Args:
             imgs (List[Tensor]): the outer list indicates test-time
@@ -52,10 +53,7 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
                 augs (multiscale, flip, etc.) and the inner list indicates
                 images in a batch.
         """
-        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
-            if not isinstance(var, list):
-                raise TypeError('{} must be a list, but got {}'.format(
-                    name, type(var)))
+        pass
 
         num_augs = len(imgs)
         if num_augs != len(img_metas):
@@ -70,20 +68,20 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
 
         #from torch.Size([3, 1024, 2048, 3])
         #to list of  torch.Size([1024, 2048, 3])
-        imgs = input['img']
+        imgs = input['img']        
         ids = input['id']
         list_image = []
         list_id = []        
         for image in range(imgs.size()[0]):
             
             im = imgs[image,:,:,:]           
-            print('shape',im.shape)
+            #print('shape',im.shape)
             im = torch.transpose(im, 0, 2)
             im = torch.transpose(im, 1, 2)
             im = torch.unsqueeze(im, 0).float().to(self.device)
-            print('shape',im.shape)
+            #print('shape',im.shape)
             list_image.append(im)
-            list_id.append(ids[image])
+            list_id.append(int(ids[image]))
         
 
 

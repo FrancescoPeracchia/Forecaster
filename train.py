@@ -84,9 +84,6 @@ def main():
     train_image = next(iter_data)
     print('train_image',train_image)
 
-    print(len(model(train_image,cfg.modality['target'])['huge']))
-    print(model(train_image)['medium'][0].size())
-    print(cfg.modality['target'])
 
 
     '''
