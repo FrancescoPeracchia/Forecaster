@@ -79,26 +79,18 @@ def main():
 
     
     iter_data =  iter(data_loaders[0])
-    print('fine iter')
+    
     
     train_image = next(iter_data)
-    print('train_image',train_image)
+    #print('train_image',train_image)
 
-
-
-    '''
-    device = next(model.parameters()).device
-
-    
-    print(train_image.size())
-    
-    x = train_image[0]
-    save_image(x)
+    predictions_loss = model(train_image,cfg.modality['target'])
+    print(predictions_loss)
     
     
-    #model(train_image)
 
-    '''
+
+
  
 
 

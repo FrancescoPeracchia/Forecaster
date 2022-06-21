@@ -1,8 +1,16 @@
 
+
+
 modality = dict(
 frame_sequence = [-2, -1, 0, 1, 2, 3],
 target = [1,2,3]
 )
+
+predictor = dict (low = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
+                    medium = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
+                    high = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
+                    huge = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True))
+
 
 #_________________________________________________________________________
 # model settings
@@ -10,6 +18,7 @@ model = dict(
     efficientPS_config = '/inference/efficientPS_cityscapes/config/efficientPS_multigpu_sample.py',
     efficientPS_checkpoint = '/inference/efficientPS_cityscapes/model/model.pth',
     multi_forecasting_modality = False,
+    predictor_config = predictor,
     type='Forecaster'
     )
 

@@ -75,9 +75,13 @@ class RawDataset(Dataset):
 
     def __getitem__(self, idx):
             data=dict()
-            data['img'] = self.prepare_train_img(idx)
+            
+        
+            #print(self.img_infos[idx])
+            data['img'] = self.prepare_train_img(idx)['img']
             data['clip'] = self.img_infos[idx]['img_info']['end_frame']
-            data['id'] = self.img_infos[idx]['img_info']['id']          
+            data['id'] = self.img_infos[idx]['img_info']['id']
+                
                    
             return data
     
@@ -90,7 +94,7 @@ class RawDataset(Dataset):
         test_pipeline = [LoadImage()]+ self.pipeline[1:]
         test_pipeline = Compose(test_pipeline)
         data = test_pipeline(img_info)
-        return data['img']
+        return data
 
     def prepare_test_img(self, idx):
         img_info = self.img_infos[idx]
