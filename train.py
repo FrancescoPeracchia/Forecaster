@@ -2,6 +2,7 @@ from __future__ import division
 import argparse
 import copy
 import warnings
+from PS.mmdet.models import efficientps
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
 from mmcv import Config
@@ -11,9 +12,18 @@ from model import build_forecaster
 from PS.mmdet.apis import set_random_seed
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
-from utils_train import parse_loss
+from utils_train import parse_loss,inference_detector
 
 import os
+
+
+
+
+from PIL import Image
+from PS.mmdet.datasets.cityscapes import PALETTE
+import numpy as np
+from skimage.morphology import dilation
+from skimage.segmentation import find_boundaries
 
 #to get the current working directory
 
@@ -169,6 +179,9 @@ def main():
 
 
     model.eval()
+    PALETTE.append([0,0,0])
+    colors = np.array(PALETTE, dtype=np.uint8)
+    
     
     with torch.no_grad():
         for i, data in enumerate(data_loaders[0]):
@@ -182,9 +195,45 @@ def main():
    
             #print('targets',data['id'])
             #print('data',data)
-            print(datasets[0].get_ann_info(data['id'][3])['filename_complete'])
-            path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
 
+           
+            img_info = datasets[0].get_ann_info(data['id'][3])['img_info']
+            print(img_info)
+            path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
+            imgName = img_info['filename']
+    
+            print(path_target_image)
+            print(imgName)
+
+
+
+
+            result = inference_detector(model.efficientps,path_target_image,pre_out,gt_out, eval='panoptic',)
+            pan_pred, cat_pred, _ = result[0]
+
+            #outputFileName = imgName.replace("_leftImg8bit.png", "_panoptic.png")
+            out_dir =  '/home/fperacch/CODE/data/kitti_raw/output_forecasting'
+            img = Image.open(path_target_image)
+            out_path = os.path.join(out_dir, imgName)
+
+            sem = cat_pred[pan_pred].numpy()
+            sem_tmp = sem.copy()
+            sem_tmp[sem==255] = colors.shape[0] - 1
+            sem_img = Image.fromarray(colors[sem_tmp])
+
+            is_background = (sem < 11) | (sem == 255)
+            pan_pred = pan_pred.numpy() 
+            pan_pred[is_background] = 0
+
+            contours = find_boundaries(pan_pred, mode="outer", background=0).astype(np.uint8) * 255
+            contours = dilation(contours)
+
+            contours = np.expand_dims(contours, -1).repeat(4, -1)
+            contours_img = Image.fromarray(contours, mode="RGBA")
+
+            out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
+            out = Image.alpha_composite(out, contours_img)
+            out.convert(mode="RGB").save(out_path)
 
 
 

@@ -74,4 +74,3 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
         else:
             return self.forward_test(list_image,list_id, targets, **kwargs)
 
-

@@ -38,7 +38,7 @@ img_norm_cfg = dict(
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='Resize', img_scale=(2048, 1024), ratio_range=(0.5, 2.0), keep_ratio=False)
+    dict(type='Resize_custom', img_scale=(2048, 1024), ratio_range=(0.5, 2.0), keep_ratio=False)
 ]
 test_pipeline = [
     dict(type='LoadImageFromFile'),
@@ -47,7 +47,7 @@ test_pipeline = [
         img_scale=(2048, 1024),
         flip=False,
         transforms=[
-            dict(type='Resize'),
+            dict(type='Resize_custom'),
             dict(type='RandomFlip'),
             dict(type='Normalize', **img_norm_cfg),
             dict(type='Pad', size_divisor=32),
