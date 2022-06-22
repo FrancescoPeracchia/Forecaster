@@ -42,8 +42,8 @@ class BasePredictor(nn.Module, metaclass=ABCMeta):
     def forward(self, input, targets, return_loss=True):
         
         past,future = self.concatenate_by_depth(input,targets)
-        print(type(past['low']))
-        print(type(future['low']))
+        #print(type(past['low']))
+        #print(type(future['low']))
         
 
         
@@ -67,14 +67,17 @@ class BasePredictor(nn.Module, metaclass=ABCMeta):
         
         """
         lengt = len(target)
+        #print(len(input['low']))
         #i.e = 3 sono 3+3 = 6
         input_features_INPUT = {}
         input_features_FUTURE = {}
 
         for feature_level in range(len(input)):
+            
 
             #4
             features = input[str(self.list_key[str(feature_level)])]
+            
             #read from image 1 the depth dimetions [N,D,H,W]
             depth = features[0].shape[1]
             #print('depth',depth)

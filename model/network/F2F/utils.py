@@ -5,11 +5,15 @@ def stack(features,depth,lengt):
     list = []
     list_= []
     for i in range(depth):
+        #print('depth',depth)
         #list of tensor to stack
         
         #len(features)-lengt beacuse only feature from 0 to 2 are from past images from 3 to 5 are futures
+        #print('leng',lengt)
+        #print('leng',len(features))
 
         for l in range(len(features)-lengt):
+            #print('added',features[l][0,i,:,:].shape)
             list.append(features[l][0,i,:,:])
         
 
@@ -19,13 +23,13 @@ def stack(features,depth,lengt):
     
 
     
-    print('lenght of list shoulf be 256*3 and is',len(list))
+    #print('lenght of list shoulf be 256*3 and is',len(list))
     tensors = tuple(list)
     output = torch.stack(tensors,dim=0)
-    print('output shape',output.shape)
+    #print('output shape',output.shape)
     tensors = tuple(list_)
     output1 = torch.stack(tensors,dim=0)
-    print('output shape',output1.shape)
+    #print('output shape',output1.shape)
     return output,output1
 
         

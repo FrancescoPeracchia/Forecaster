@@ -44,24 +44,8 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
     
     @abstractmethod
     def forward_test(self, list_image,list_id, targets, **kwargs):
-        """
-        Args:
-            imgs (List[Tensor]): the outer list indicates test-time
-                augmentations and inner Tensor should have a shape NxCxHxW,
-                which contains all images in the batch.
-            img_metas (List[List[dict]]): the outer list indicates test-time
-                augs (multiscale, flip, etc.) and the inner list indicates
-                images in a batch.
-        """
         pass
 
-        num_augs = len(imgs)
-        if num_augs != len(img_metas):
-            raise ValueError(
-                'num of augmentations ({}) != num of image meta ({})'.format(
-                    len(imgs), len(img_metas)))
-        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
-        imgs_per_gpu = imgs[0].size(0)
        
     @auto_fp16(apply_to=('img', ))
     def forward(self, input, targets, return_loss=True, eval=None, **kwargs):
@@ -88,6 +72,6 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
         if return_loss:
             return self.forward_train(list_image,list_id, targets, **kwargs)
         else:
-            return self.forward_test(list_image,list_id, targets, eval, **kwargs)
+            return self.forward_test(list_image,list_id, targets, **kwargs)
 
 

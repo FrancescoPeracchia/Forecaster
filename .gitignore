@@ -1,6 +1,6 @@
 data/
 inference/
 checkpoint/
-
+runs/
 
 *.vscode

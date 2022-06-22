@@ -7,6 +7,9 @@ import mmcv
 from mmdet.models import build_detector
 from .base import BaseForecaster
 from .F2F import F2F
+import copy
+import torch.nn as nn
+
 class Forecaster(BaseForecaster):
 
     def __init__(self,
@@ -103,7 +106,9 @@ class Forecaster(BaseForecaster):
             image_features = self.efficientps.extract_feats(imgs)
             #is a generator gives in output a tuple with 4 features resolutions
 
-            output = self.features_list.copy()
+            #feature_list = self.features_list.copy()
+            output = copy.deepcopy(self.features_list)
+            #output = dict(feature_list)
             keys = self.list_key.copy()
             
             
@@ -157,7 +162,7 @@ class Forecaster(BaseForecaster):
 
         return output
 
-    def extract_results(self,features,list_id,targets, Loss = False):
+    def extract_results(self,features,list_id,targets):
 
         """
         Args:
@@ -193,43 +198,72 @@ class Forecaster(BaseForecaster):
             output['index'].append(index)
         
 
-        if Loss == False:
+        
             return output 
-        else :
-            return PS_Loss(output)
+    
+    def forward_ps(self,pre,gt,list_id,target):
+        
+
+
+        return
+
 
     def forward_train(self,list_image,list_id, targets):
         #imgs is a list of tensors with shape
         #[(hight,width,channels).....]
-        losses = dict()
-        features_list = self.extract_ps(list_image)
-        losses = self.predictor(features_list, targets, return_loss=True)
+        #print(type(list_image))
+        #print(len(list_image))
+        
+        features_dict = self.extract_ps(list_image)
+        #print('dept',len(features_list['low']))
+        losses = self.predictor(features_dict, targets, return_loss=True)
 
         return losses
     
 
     def forward_test(self,list_image,list_id, targets):
-        #imgs is a list of tensors with shape
-        #[(hight,width,channels).....]
-        losses = dict()
+        self.loss = nn.L1Loss()
         
-    
-        
-        #number_images = len(imgs)
-  
-        
+        features_dict = self.extract_ps(list_image)
+        #return loss is false
+        pre_out,gt_out = self.predictor(features_dict, targets, return_loss=False)
 
- 
-        features_list = self.extract_ps(list_image)
-        #print('list id',list_id)
-        #print('targets',targets)
+        #check is feature target is still the same
+        vera = features_dict['low'][3]
+        print('vera shape', vera.shape)
+        print('feature dict',len(features_dict['low']))
 
-
-        
-        
+        gt = gt_out['low']
+        print('gt shape', gt.shape)
 
 
-        return losses
+        loss_ = self.loss(vera, gt)
+        
+
+        print('loss',loss_)
+        return pre_out,gt_out
+
+
+
+        '''
+        predicted
+        gt
+        list_id
+        target 
+
+        self.forward_ps(pre,gt,list_id,target)
+        '''
+
+
+
+
+
+
+        
+        
+
+
+        return 
     
 
   

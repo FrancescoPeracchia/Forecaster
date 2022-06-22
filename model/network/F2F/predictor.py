@@ -59,14 +59,17 @@ class F2F(BasePredictor):
         Args: Dictionaty with {'0':'low','1':'medium','2':'high','3':'huge'}
         Dictionaty['low'] is a torch tensor  of size ([D*N,256,512]) i.e ([768,256,512])
 
-        Return: 
+        Return: Loss for each level
         """
         #print(past['low'].shape)
+        #print(past['medium'].shape)
+        #print(past['high'].shape)
+        #print(past['huge'].shape)
         losses = {}
 
 
         low = torch.reshape(past['low'],(256,3,256,512))
-        print(low[0,0,:,:])
+        #print(low[0,0,:,:])
         #print(past['low'].shape)
         medium = torch.reshape(past['medium'],(256,3,128,256))
         #print(past['low'].shape)
@@ -74,7 +77,7 @@ class F2F(BasePredictor):
         #print(past['low'].shape)
         huge = torch.reshape(past['huge'],(256,3,32,64))
 
-
+        #Network
         low_pre = self.f2f_low(low)
         medium_pre = self.f2f_medium(medium)
         high_pre = self.f2f_high(high)
@@ -96,65 +99,122 @@ class F2F(BasePredictor):
         for feature in range(len(future)) :
             
             key = self.list_key[str(feature)]
-            print('Processing',key)
+            #key could be 'low' 'medium' 'high' 'huge'
+             
             pre = predictions[key]
             pre = torch.squeeze(pre, 0)
+            #from torch([1,1,256,W,H])
+            #to torch([1,256,W,H])
 
+
+            #considering only the first image for training
             fu = future[key][0,:,:,:]
             fu = torch.unsqueeze(fu, 0)
+            #from torch([3,256,W,H])
+            #to torch([1,256,W,H])
+            #and then torch([1,256,W,H])
+
+            #bothe predicted and future have the same shape
+            #to compute the loss we have to check that both the
+            #tensors are in the same GPU
+
 
 
 
             if pre.get_device() != fu.get_device():
                 fu = fu.to(pre.get_device())
 
-                print(fu.get_device())
-                print(pre.get_device())
-            
 
-            print(fu.get_device())
-            print(pre.get_device())
+            #print(fu.get_device())
+            #print(pre.get_device())
 
             
-         
+            #to avoid mistake in DEBUGGING
             assert pre.shape == fu.shape, 'size between prediceted features and future features are not matching '
             assert pre.get_device() == fu.get_device(), 'prediceted features and future features are not in the same GPU'
             
+            #Loss is finalli computed and stored under the relative key
+            #each key ll have a different loss :'low' 'medium' 'high' 'huge'
+            #then in train.py ll be computed a comulative loss
             loss_ = self.loss(pre, fu)
-
             losses[str(key)]  = loss_
 
        
         return losses
 
-
-
-       
-
-
-
-        print(past['medium'].shape)
-        print(past['high'].shape)
-        print(past['huge'].shape)
-
-
-
-
-
     def forward_test(self,past,future,targets):
         """
-        Args: List of Concatendated Features i.e 
+        Args: Dictionaty with {'0':'low','1':'medium','2':'high','3':'huge'}
+        Dictionaty['low'] is a torch tensor  of size ([D*N,256,512]) i.e ([768,256,512])
 
-        Return
-        
-        
+        Return: List features for both predicted target frame and gt target frame
         """
+
+
+
+        low = torch.reshape(past['low'],(256,3,256,512))
+        #print(low[0,0,:,:])
+        #print(past['low'].shape)
+        medium = torch.reshape(past['medium'],(256,3,128,256))
+        #print(past['low'].shape)
+        high = torch.reshape(past['high'],(256,3,64,128))
+        #print(past['low'].shape)
+        huge = torch.reshape(past['huge'],(256,3,32,64))
+
+        #Network
+        low_pre = self.f2f_low(low)
+        medium_pre = self.f2f_medium(medium)
+        high_pre = self.f2f_high(high)
+        huge_pre = self.f2f_huge(huge)
         
+
+       #from torch([1,256,1,512,256])
+       # to  torch([1,1,256,512,256])
+
+        low_pre = torch.transpose(low_pre, 1, 2)
+        medium_pre = torch.transpose(medium_pre, 1, 2)
+        high_pre = torch.transpose(high_pre, 1, 2)
+        huge_pre = torch.transpose(huge_pre, 1, 2)
         
+
+        predictions = {'low':low_pre,'medium':medium_pre,'high':high_pre,'huge':huge_pre}
+        pre_out = {}
+        gt_out = {}
+
+
+        for feature in range(len(future)) :
+            
+            key = self.list_key[str(feature)]
+            #key could be 'low' 'medium' 'high' 'huge'
+             
+            pre = predictions[key]
+            pre = torch.squeeze(pre, 0)
+            #from torch([1,1,256,W,H])
+            #to torch([1,256,W,H])
+
+
+            #considering only the first image for training
+            fu = future[key][0,:,:,:]
+            fu = torch.unsqueeze(fu, 0)
+            #from torch([3,256,W,H])
+            #to torch([1,256,W,H])
+            #and then torch([1,256,W,H])
+
+            if pre.get_device() != fu.get_device():
+                fu = fu.to(pre.get_device())
+
+  
+            #to avoid mistake in DEBUGGING
+            assert pre.shape == fu.shape, 'size between prediceted features and future features are not matching '
+            assert pre.get_device() == fu.get_device(), 'prediceted features and future features are not in the same GPU'
+
+            pre_out[key] = pre
+            gt_out[key] = fu
+            
+
+
        
-        x = self.flatten(x)
-        logits = self.linear_relu_stack(x)
-        return logits
+        return pre_out,gt_out
 
 
 
@@ -174,7 +234,7 @@ class F2F_base(nn.Module):
     def forward(self,x):
         x = torch.unsqueeze(x, 0)
         x = x .to(self.device)
-        print('shape',x.shape)
+        #print('shape',x.shape)
 
 
         y = self.conv1(x)
