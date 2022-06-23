@@ -53,7 +53,10 @@ def main():
     colors = np.array(PALETTE, dtype=np.uint8)
 
     for img_file in os.listdir(args.input):
-        img = cv2.imread(os.path.join(args.input, img_file))
+        path = os.path.join(args.input, img_file)
+        print('image',img_file)
+        print('path',path)
+        img = cv2.imread(path)
         img_shape = img.shape[:2][::-1]
         img_ = cv2.resize(img, (384,1280))
 
@@ -84,7 +87,12 @@ def main():
             cv2.imshow('panopitc', out)
             ch = cv2.waitKey(args.wait)
 
-        cv2.imwrite(os.path.join(args.out, img_file), img)
+
+        output_path = os.path.join(args.out, img_file)
+        output_path_ps = os.path.join(args.out, img_file,'/ps')
+        print('output',output_path)
+        cv2.imwrite(output_path, out)
+
 
 if __name__ == '__main__':
     main()

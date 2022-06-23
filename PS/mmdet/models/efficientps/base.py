@@ -132,9 +132,51 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             # TODO: support test augmentation for predefined proposals
             assert 'proposals' not in kwargs
             return self.aug_test(imgs, img_metas, **kwargs)
+    
+
+    def forward_forecasting(self, imgs, img_metas,features, eval=None, **kwargs):
+        """
+        Args:
+            imgs (List[Tensor]): the outer list indicates test-time
+                augmentations and inner Tensor should have a shape NxCxHxW,
+                which contains all images in the batch.
+            img_metas (List[List[dict]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch.
+        """
+        for var, name in [(imgs, 'imgs'), (img_metas, 'img_metas')]:
+            if not isinstance(var, list):
+                raise TypeError('{} must be a list, but got {}'.format(
+                    name, type(var)))
+
+        num_augs = len(imgs)
+        if num_augs != len(img_metas):
+            raise ValueError(
+                'num of augmentations ({}) != num of image meta ({})'.format(
+                    len(imgs), len(img_metas)))
+        # TODO: remove the restriction of imgs_per_gpu == 1 when prepared
+        imgs_per_gpu = imgs[0].size(0)
+#        assert imgs_per_gpu == 1
+
+        if num_augs == 1:
+            """
+            proposals (List[List[Tensor]]): the outer list indicates test-time
+                augs (multiscale, flip, etc.) and the inner list indicates
+                images in a batch. The Tensor should have a shape Px4, where
+                P is the number of proposals.
+            """
+            if 'proposals' in kwargs:
+                kwargs['proposals'] = kwargs['proposals'][0]
+            return self.simple_test_forecasting(features, img_metas[0], eval=eval, **kwargs)
+        else:
+            # TODO: support test augmentation for predefined proposals
+            assert 'proposals' not in kwargs
+            return self.aug_test(imgs, img_metas, **kwargs)
+
+
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas, return_loss=True, eval=None, **kwargs):
+    def forward(self, img, img_metas,features, return_loss=True, eval=None, forecasting=False, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.
@@ -143,10 +185,17 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         should be double nested (i.e.  List[Tensor], List[List[dict]]), with
         the outer list indicating test time augmentations.
         """
+        if forecasting:
+            print('evaluation',eval)
+            return self.forward_forecasting(img, img_metas,features, eval, **kwargs)
+
+
         if return_loss:
             return self.forward_train(img, img_metas, **kwargs)
         else:
             return self.forward_test(img, img_metas, eval, **kwargs)
+
+        
 
     def show_result(self, data, result, dataset=None, score_thr=0.3):
         if isinstance(result, tuple):

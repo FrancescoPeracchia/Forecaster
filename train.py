@@ -32,6 +32,9 @@ from skimage.segmentation import find_boundaries
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
+    parser.add_argument('output', help='output path')
+    parser.add_argument('gt',type=bool, help='True if you want to produce in output also the gt map\
+                        ,False if is already computed and you want to generate only results from predictions')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
 
@@ -46,6 +49,9 @@ def main():
 
     print(directory)
     args = parse_args()
+
+    output_path = args.output
+    GT = args.gt
 
     cfg = Config.fromfile(args.config)
 
@@ -153,17 +159,11 @@ def main():
 
         return last_loss
 
-        
-    
-    
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
     epoch_number = 0
-
     EPOCHS = 0
-
-    
 
     for epoch in range(EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
@@ -187,9 +187,6 @@ def main():
         for i, data in enumerate(data_loaders[0]):
             print('TEST Processed set n.: ',i)
 
-    
-            #lunch ps only on the target frame
-
 
             pre_out,gt_out = model(data,cfg.modality['target'],return_loss = False)
    
@@ -198,42 +195,49 @@ def main():
 
            
             img_info = datasets[0].get_ann_info(data['id'][3])['img_info']
-            print(img_info)
+            #print(img_info)
             path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
             imgName = img_info['filename']
     
-            print(path_target_image)
-            print(imgName)
+            #print(path_target_image)
+            #print(imgName)
 
+            prediction_path = os.path.join(output_path,'forecasted')
+            list_path =[prediction_path]
+            features = [pre_out]
+            if GT :
+                features.append(gt_out)
+                gt_path = os.path.join(output_path,'gt')
+                list_path.append(gt_path)
+            
 
+            for i,feature in enumerate(features):
+                save_path = list_path[i]
+                result = inference_detector(model.efficientps,path_target_image,feature, eval='panoptic',)
+                pan_pred, cat_pred, _ = result[0]
 
+                
+                img = Image.open(path_target_image)
+                out_path = os.path.join(save_path, imgName)
 
-            result = inference_detector(model.efficientps,path_target_image,pre_out,gt_out, eval='panoptic',)
-            pan_pred, cat_pred, _ = result[0]
+                sem = cat_pred[pan_pred].numpy()
+                sem_tmp = sem.copy()
+                sem_tmp[sem==255] = colors.shape[0] - 1
+                sem_img = Image.fromarray(colors[sem_tmp])
 
-            #outputFileName = imgName.replace("_leftImg8bit.png", "_panoptic.png")
-            out_dir =  '/home/fperacch/CODE/data/kitti_raw/output_forecasting'
-            img = Image.open(path_target_image)
-            out_path = os.path.join(out_dir, imgName)
+                is_background = (sem < 11) | (sem == 255)
+                pan_pred = pan_pred.numpy() 
+                pan_pred[is_background] = 0
 
-            sem = cat_pred[pan_pred].numpy()
-            sem_tmp = sem.copy()
-            sem_tmp[sem==255] = colors.shape[0] - 1
-            sem_img = Image.fromarray(colors[sem_tmp])
+                contours = find_boundaries(pan_pred, mode="outer", background=0).astype(np.uint8) * 255
+                contours = dilation(contours)
 
-            is_background = (sem < 11) | (sem == 255)
-            pan_pred = pan_pred.numpy() 
-            pan_pred[is_background] = 0
+                contours = np.expand_dims(contours, -1).repeat(4, -1)
+                contours_img = Image.fromarray(contours, mode="RGBA")
 
-            contours = find_boundaries(pan_pred, mode="outer", background=0).astype(np.uint8) * 255
-            contours = dilation(contours)
-
-            contours = np.expand_dims(contours, -1).repeat(4, -1)
-            contours_img = Image.fromarray(contours, mode="RGBA")
-
-            out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
-            out = Image.alpha_composite(out, contours_img)
-            out.convert(mode="RGB").save(out_path)
+                out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
+                out = Image.alpha_composite(out, contours_img)
+                out.convert(mode="RGB").save(out_path)
 
 
 

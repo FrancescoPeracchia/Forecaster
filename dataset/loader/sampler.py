@@ -184,19 +184,22 @@ class CustomSampler(Sampler):
     
         self.data_source = data_source
         self.sequence = sequence
-    def __iter__(self):
-
         indices = list(range(len(self.data_source)))
 
 
         print('GENERATING INDICES')
         indices = self.convertbis(list(range(len(self.data_source))),self.sequence)
         print('FILTERING INDICES FROM DIFFERENT VIDEO-CLIPS')
-        indices = self.filter_clips(indices,self.sequence)
+
+        self.indices = self.filter_clips(indices,self.sequence)
+
+    def __iter__(self):
+
+       
         #gives in output list of list after filter process
         #we need to reacreate a unique list
         filtered_indices = []
-        for i in indices:
+        for i in self.indices:
             filtered_indices.extend(i)
 
         return iter(filtered_indices)

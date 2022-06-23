@@ -69,7 +69,7 @@ class LoadImage(object):
         results['ori_shape'] = img.shape
         return results
 
-def inference_detector(model,img,pre_out,gt_out,eval=None):
+def inference_detector(model,img,feature,eval=None):
     #img is a path
     cfg = model.cfg
     device = next(model.parameters()).device
@@ -80,12 +80,19 @@ def inference_detector(model,img,pre_out,gt_out,eval=None):
     data = dict(img=img)
     data = test_pipeline(data)
     data = scatter(collate([data], samples_per_gpu=1), [device])[0]
+
+    #add our features
+    data['features'] = feature
+    
+
     # forward the model
     with torch.no_grad():
         if eval is not None:
             data['eval'] = eval 
         model = model.to('cuda:0')
         #data = data.to('cuda:0')
-        print(data)
-        result = model(return_loss=False, rescale=True, **data)
+        
+        #print(' inference data',data)
+
+        result = model(return_loss=False,forecasting =True,rescale=True, **data)
     return result

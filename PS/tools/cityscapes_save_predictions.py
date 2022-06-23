@@ -70,6 +70,7 @@ def main():
             sem = cat_pred[pan_pred].numpy()
             sem_tmp = sem.copy()
             sem_tmp[sem==255] = colors.shape[0] - 1
+
             sem_img = Image.fromarray(colors[sem_tmp])
 
             is_background = (sem < 11) | (sem == 255)
@@ -81,6 +82,12 @@ def main():
 
             contours = np.expand_dims(contours, -1).repeat(4, -1)
             contours_img = Image.fromarray(contours, mode="RGBA")
+            print(type(img))
+            print(type(sem_img))
+            width, height = sem_img.size
+            print(width, height)
+            width, height = img.size
+            print(width, height)
 
             out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
             out = Image.alpha_composite(out, contours_img)

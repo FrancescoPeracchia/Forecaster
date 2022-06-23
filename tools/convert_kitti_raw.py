@@ -5,9 +5,12 @@ import os
 from multiprocessing import Pool, Value, Lock
 from os import path, mkdir, listdir
 import shutil
+from time import process_time_ns
 parser = argparse.ArgumentParser(description="Convert KITTI to coco format")
 parser.add_argument("root_dir", metavar="ROOT_DIR", type=str, help="Root directory to clip's folders ")
 parser.add_argument("out_dir", metavar="OUT_DIR", type=str, help="Output directory")
+import cv2
+import json
 
 
 def main(args):
@@ -24,7 +27,6 @@ def main(args):
 
     
 
-    import json
 
     with open('data/kitti_raw/train.json', 'w') as f:
         print("The train file is created")
@@ -81,6 +83,12 @@ def main(args):
 
         
         json.dump(data,f,indent=2)
+    
+
+    for name in os.listdir(training_path):
+        print('Resizing',name)
+        resize(training_path,name,(2048,1024))
+
            
     
 
@@ -121,6 +129,18 @@ def _ensure_dir(dir_path):
         mkdir(dir_path)
     except FileExistsError:
         pass
+
+
+def resize(path,name,dim):
+
+    name_path = os.path.join(path,name)
+    img = cv2.imread(name_path,cv2.IMREAD_UNCHANGED)
+    resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
+    cv2.imwrite(name_path,resized)
+    
+
+
+
 
 
 if __name__ == "__main__":

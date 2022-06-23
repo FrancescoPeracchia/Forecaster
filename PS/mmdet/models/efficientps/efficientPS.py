@@ -1,4 +1,5 @@
 from __future__ import division
+from traceback import print_tb
 
 import torch
 import torch.nn as nn
@@ -44,6 +45,9 @@ class EfficientPS(BaseDetector):
 
         super(EfficientPS, self).__init__()
 
+
+        self.loss = nn.L1Loss()
+
         self.eff_backbone_flag = False if 'efficient' not in backbone['type'] else True
 
         if self.eff_backbone_flag == False:
@@ -57,6 +61,7 @@ class EfficientPS(BaseDetector):
 
         
         self.neck = builder.build_neck(neck)
+
 
         if shared_head is not None:
             self.shared_head = builder.build_shared_head(shared_head)
@@ -280,6 +285,70 @@ class EfficientPS(BaseDetector):
                 result.append([panoptic_mask, cat_, [img_metas[i]]])
 
         return result
+
+    def simple_test_forecasting(self,features, img_metas, proposals=None, rescale=False, eval=None):
+        #x = self.extract_feat(img)
+        #print(type(x))
+        #print(x[0].shape)
+        #print(features[1]['low'].shape)
+
+        #loss_pipe = self.loss(x[0],features[1]['low'])
+        #print('pipe line loss',loss_pipe)
+
+        x = []
+        for feature in features:
+            
+            f = features[feature]
+            f = f.to('cuda:0')
+            x.append(f)
+        
+        x = tuple(x)
+
+  
+
+        semantic_logits = self.semantic_head(x[:4])
+        result = []
+        if semantic_logits.shape[0] == 1:
+            proposal_list = self.simple_test_rpn(x, img_metas,
+                                     self.test_cfg.rpn)
+
+            det_bboxes, det_labels = self.simple_test_bboxes(x, 
+                img_metas, proposal_list, self.test_cfg.rcnn, rescale=rescale)
+        
+            if eval is not None:
+                       
+                panoptic_mask, cat_ = self.simple_test_mask_(
+                    x, img_metas, det_bboxes, det_labels, semantic_logits, rescale=rescale)
+                result.append([panoptic_mask, cat_, img_metas])
+        
+            else:          
+                bbox_results = bbox2result(det_bboxes, det_labels,
+                                           self.bbox_head.num_classes)
+                mask_results = self.simple_test_mask(
+                    x, img_metas, det_bboxes, det_labels, semantic_logits, rescale=rescale)
+
+                return bbox_results, mask_results
+        else:
+            for i in range(len(img_metas)):
+                new_x = []
+                for x_i in x:
+                    new_x.append(x_i[i:i+1])
+                proposal_list = self.simple_test_rpn(new_x, [img_metas[i]],
+                                     self.test_cfg.rpn)
+
+                assert eval is not None
+
+                det_bboxes, det_labels = self.simple_test_bboxes(new_x, 
+                    [img_metas[i]], proposal_list, self.test_cfg.rcnn, rescale=rescale)
+
+                panoptic_mask, cat_ = self.simple_test_mask_(
+                    new_x, [img_metas[i]], det_bboxes, det_labels, semantic_logits[i:i+1], rescale=rescale)
+
+                result.append([panoptic_mask, cat_, [img_metas[i]]])
+
+        return result
+
+
 
     def aug_test(self,):
         pass
