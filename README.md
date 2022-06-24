@@ -1,10 +1,8 @@
 # Forecaster
 ## Introduction
 
-
-# A collapsible section with markdown
 <details>
-  <summary>Click to expand!</summary>
+  <summary>Pre-processing</summary>
   
   ## Heading
   1. A numbered
