@@ -25,7 +25,9 @@ import numpy as np
 from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries
 
-#to get the current working directory
+
+#CALL
+#Forecaster$ python train.py /home/fperacch/Forecaster/configs/Forecast_multigpu_sample.py /home/fperacch/Forecaster/data/kitti_raw/output False
 
 
 
