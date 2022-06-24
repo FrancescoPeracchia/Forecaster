@@ -4,3 +4,4 @@ checkpoint/
 runs/
 efficientPS_kitti
 *.vscode
+*.zip

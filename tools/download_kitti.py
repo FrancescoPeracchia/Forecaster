@@ -30,7 +30,7 @@ def main(args):
         print(dim)
         print(type(dim))
 
-        for i in trange(2):
+        for i in trange(dim):
             drive, path_and_file = os.path.splitdrive(lines[i])
             path_, file_ = os.path.split(path_and_file)
             path_zip = os.path.join(cwd,file_)
