@@ -2,11 +2,7 @@
 ## Introduction
 
 <details>
-  <summary>Pre-processing</summary>
-  
-  ## Heading
-  1. A numbered
-  2. list
-     * With some
-     * Sub bullets
+  <summary>Pre-processing</summary>  
+  1. Download dataset
+  2. Dataset creation 
 </details>
