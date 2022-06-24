@@ -13,9 +13,9 @@
 </details>
 
 <details>
-  <summary>DATASET</summary>
+  <summary>MODEL</summary>
   
-  ## Heading
+  
   1. Download Raw Kitti 
   2. Extract images
      * With some
