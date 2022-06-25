@@ -19,9 +19,13 @@ parser.add_argument("out_dir", metavar="OUT_DIR", type=str, help="Output directo
 
 def main(args):
     _ensure_dir(args.out_dir)
-    #out_path = os.path.join(args.out_dir, "training")
+
     zip_out_path = os.path.join(args.out_dir, "zip")
+    _ensure_dir(zip_out_path)
+
     target_folder = os.path.join(args.out_dir, "processed")
+    _ensure_dir(target_folder)
+
     cwd = os.getcwd()
 
     with open(args.input_file) as f:
@@ -52,9 +56,11 @@ def main(args):
             
 
             delete_folder(name_folder_to_delete[:-1],'image_03')
-             
+
+
             move_rename(name_folder_to_delete[:-1],new_name[:-1])
 
+    shutil.rmtree(zip_out_path)
 
 
 def _ensure_dir(dir_path):

@@ -71,8 +71,16 @@ data = dict(
         ann_file ='/data/kitti_raw/train.json',
         data_root = '/data/kitti_raw/training',
         pipeline=train_pipeline),
-    val=dict(),
-    test=dict())
+    validation=dict(
+        type=dataset_type,
+        ann_file ='/data/kitti_raw/validation.json',
+        data_root = '/data/kitti_raw/validation',
+        pipeline=train_pipeline),
+    test=dict(
+        type=dataset_type,
+        ann_file ='/data/kitti_raw/test.json',
+        data_root = '/data/kitti_raw/test',
+        pipeline=train_pipeline),
 
     
 evaluation = dict(interval=1, metric=['panoptic'])

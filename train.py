@@ -81,12 +81,13 @@ def main():
     cfg.data.train['data_root'] = str(directory+cfg.data.train['data_root'])
     print('data_root path :', cfg.data.train['data_root'])
 
+    #lists of datesets
     datasets = [build_dataset(cfg.data.train)]
+    datasets_val = [build_dataset(cfg.data.train)]
+    datasets_test = [build_dataset(cfg.data.train)]
 
 
-    
-
-
+    #lists of dataloaders
     data_loaders = [
         build_dataloader(
             ds,
@@ -96,12 +97,24 @@ def main():
             seed=cfg.seed) for ds in datasets
     ]
 
+    data_loaders_val = [
+        build_dataloader(
+            ds,
+            cfg.modality['frame_sequence'],
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            seed=cfg.seed) for ds in datasets_val
+    ]
 
+    data_loaders_test = [
+        build_dataloader(
+            ds,
+            cfg.modality['frame_sequence'],
+            cfg.data.imgs_per_gpu,
+            cfg.data.workers_per_gpu,
+            seed=cfg.seed) for ds in datasets_test
+    ]
 
-
-    
-    iter_data =  iter(data_loaders[0])
-    print(iter_data)
 
     #optimizer_low = torch.optim.SGD(model.predictor.f2f_low.parameters(), lr=0.001, momentum=0.9)
     #optimizer_medium = torch.optim.SGD(model.predictor.f2f_medium.parameters(), lr=0.001, momentum=0.9)
@@ -171,14 +184,25 @@ def main():
         print('EPOCH {}:'.format(epoch_number + 1))
 
     
+        #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
+        #it ll generatate a model with efficientPS parts for training activated
+        model.predictor.train()
         avg_loss = train_one_epoch(epoch_number, writer)
         print('avg_loss',avg_loss)
+        
+
+        model.eval()
+        #note model.efficientps is already at eval() you could even use model.predictor.eval()
+        with torch.no_grad():
+            print('VALIDATION ')
+            for i, data in enumerate(data_loaders_test[0]):
 
 
         epoch_number += 1
 
     
 
+    torch.save(model,'')
 
     model.eval()
     PALETTE.append([0,0,0])
@@ -186,24 +210,18 @@ def main():
     
     
     with torch.no_grad():
-        for i, data in enumerate(data_loaders[0]):
+        for i, data in enumerate(data_loaders_test[0]):
             print('TEST Processed set n.: ',i)
 
 
             pre_out,gt_out = model(data,cfg.modality['target'],return_loss = False)
-   
-            #print('targets',data['id'])
-            #print('data',data)
 
            
             img_info = datasets[0].get_ann_info(data['id'][3])['img_info']
-            #print(img_info)
             path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
             imgName = img_info['filename']
     
-            #print(path_target_image)
-            #print(imgName)
-
+     
             prediction_path = os.path.join(output_path,'forecasted')
             list_path =[prediction_path]
             features = [pre_out]

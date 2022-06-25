@@ -13,10 +13,14 @@ import shutil
 parser = argparse.ArgumentParser(description="Convert KITTI to coco format")
 parser.add_argument("root_dir", metavar="ROOT_DIR", type=str, help="Root directory to clip's folders ")
 parser.add_argument("out_dir", metavar="OUT_DIR", type=str, help="Output directory")
-
+parser.add_argument('--resize', type=bool, default=True, help='if images should be resized by CV2')
+parser.add_argument('--percentage', nargs='+', type=float, default=(0.8,0.1,0.1), help='tuple percentage to divide (train,validation,test)')
 
 def main(args):
     print("Loading KITTI RAW from", args.root_dir)
+
+    RESIZE = args.resize
+    PERCENTAGE = tuple(args.percentage)
     
 
 
@@ -38,16 +42,30 @@ def main(args):
     _ensure_dir(test_path)
 
 
-    folder_root = path.join(args.root_dir, "pra")
+    folder_root = path.join(args.root_dir, "processed")
     num_folders = len(get_immediate_subdirectories(folder_root))
+
+    training_len = int(num_folders*PERCENTAGE[0]) 
+    validation_len = int(num_folders*PERCENTAGE[1])
+    testing_len = int(num_folders*PERCENTAGE[2])
+
+    print(training_len) 
+    print(validation_len) 
+    print(testing_len) 
+
+    #path json files
+    json_train = path.join(args.out_dir,'train.json')
+    json_validation = path.join(args.out_dir,'validation.json')
+    json_test = path.join(args.out_dir,'test.json')
+
     processed = 0
     
 
-    with open('data/kitti_raw/train.json', 'w') as f:
+    with open(json_train, 'w') as f:
         print("The train file is created")
-        with open('data/kitti_raw/validation.json', 'w') as v:
+        with open(json_validation, 'w') as v:
             print("The validation file is created")
-            with open('data/kitti_raw/test.json', 'w') as t:
+            with open(json_test, 'w') as t:
                 print("The test file is created")
 
                 names =[]   
@@ -61,11 +79,11 @@ def main(args):
                 for folder in get_immediate_subdirectories(folder_root):
                     print('processed folder ',processed, '/',num_folders )
 
-                    if processed < 2 :
+                    if processed < training_len :
                         destination_path = training_path
-                    elif processed >= 2 and processed < 4 :
+                    elif processed >= training_len and processed < training_len+training_len :
                         destination_path = validation_path
-                    elif processed >= 4 :
+                    elif processed >= training_len+training_len :
                         destination_path = test_path
 
                     processed +=1
@@ -142,15 +160,31 @@ def main(args):
                         print('not right path')         
                     
 
-                
+                len_data_train = len(data_train)
+                len_data_val = len(data_val)
+                len_data_test = len(data_test)
                 json.dump(data_train,f,indent=2)
                 json.dump(data_val,v,indent=2)
                 json.dump(data_test,t,indent=2)
     
+    if RESIZE :
+        count_train = 0 
+        for name in os.listdir(training_path):
+            print('Resizing TRAIN',count_train,'/',len_data_train)
+            resize(training_path,name,(2048,1024))
+            count_train +=1
+        
+        count_validation = 0
+        for name in os.listdir(validation_path):
+            print('Resizing VALIDATION',count_validation,'/',len_data_val)
+            resize(validation_path,name,(2048,1024))
+            count_validation +=1
 
-     #for name in os.listdir(destination_path):
-        #print('Resizing',name)
-        #resize(trainindestination_pathg_path,name,(2048,1024))
+        count_test = 0
+        for name in os.listdir(test_path):
+            print('Resizing ',count_test,'/',len_data_test)
+            resize(test_path,name,(2048,1024))
+            count_test +=1
 
            
     
