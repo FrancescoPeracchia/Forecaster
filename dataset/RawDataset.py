@@ -33,7 +33,8 @@ class RawDataset(Dataset):
         self.data_root = data_root
         self.pipeline = pipeline
         self.test_mode = test_mode
-        
+        print('load annotation',self.ann_file)
+        print('load data_root',self.data_root)
 
 
         self.img_infos = self.load_annotations(self.ann_file)

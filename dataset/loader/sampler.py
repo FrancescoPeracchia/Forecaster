@@ -1,15 +1,13 @@
 from __future__ import division
 from errno import ESTALE
 import math
-
-
 from select import select
-
 import numpy as np
 import torch
 from mmcv.runner import get_dist_info
 from torch.utils.data import DistributedSampler as _DistributedSampler
 from torch.utils.data import Sampler
+from tqdm import trange
 
 
 class DistributedSampler(_DistributedSampler):
@@ -213,8 +211,7 @@ class CustomSampler(Sampler):
     def convertbis(self,indices,sequence):
         temp = []
         prior = []
-
-        for i in range (0,len(indices)):
+        for i in trange(len(indices)):
             prior = []
 
             for ind in sequence:
@@ -237,14 +234,17 @@ class CustomSampler(Sampler):
         list_ = []
         pre_filter =[]
         final = []
-
-        for element in temp:
+        print('Creating list....')
+        for i in trange(len(temp)):
+            element = temp[i]       
             list_.append(element)
             if(len(list_)) == len(sequence):
                 pre_filter.append(list_)
                 list_ = []
-        
-        for list in pre_filter:
+
+        print('Filtering....')
+        for i in trange(len(pre_filter)):
+            list = pre_filter[i]
             mixed = False
             clip = self.data_source[list[0]]['clip']
             #print('processing',list,'clip',clip)

@@ -68,19 +68,19 @@ data = dict(
     workers_per_gpu=1,
     train=dict(
         type=dataset_type,
-        ann_file ='/data/kitti_raw/train.json',
-        data_root = '/data/kitti_raw/training',
+        ann_file ='/data/KITTI/train.json',
+        data_root = '/data/KITTI/training',
         pipeline=train_pipeline),
     validation=dict(
         type=dataset_type,
-        ann_file ='/data/kitti_raw/validation.json',
-        data_root = '/data/kitti_raw/validation',
+        ann_file ='/data/KITTI/validation.json',
+        data_root = '/data/KITTI/validation',
         pipeline=train_pipeline),
     test=dict(
         type=dataset_type,
-        ann_file ='/data/kitti_raw/test.json',
-        data_root = '/data/kitti_raw/test',
-        pipeline=train_pipeline),
+        ann_file ='/data/KITTI/test.json',
+        data_root = '/data/KITTI/test',
+        pipeline=train_pipeline))
 
     
 evaluation = dict(interval=1, metric=['panoptic'])

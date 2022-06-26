@@ -125,9 +125,9 @@ def main(args):
 
                 for id,name,end,path_des in zip (id_list,names,last,all_list_destination_path):
                     
-                    print('id:',id)
-                    print('name:',name)
-                    print('end-name',end)
+                    #print('id:',id)
+                    #print('name:',name)
+                    #print('end-name',end)
                     #last ids works only because first are processed all training images 
                     #then all validation
                     #and finally all test
@@ -136,24 +136,24 @@ def main(args):
                     if path_des == training_path :
                         image_data = {'id': id, 'filename': name,'end_frame':end} 
                         img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':destination_path}
-                        instance = {'img_info': image_data,'img_prefix':destination_path}
+                        img_prefix ={'img_prefix':path_des}
+                        instance = {'img_info': image_data,'img_prefix':path_des}
                         data_train.append(instance)
                         last_id_train = id+1
 
                     elif path_des == validation_path :
                         image_data = {'id': id-last_id_train, 'filename': name,'end_frame':end} 
                         img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':destination_path}
-                        instance = {'img_info': image_data,'img_prefix':destination_path}
+                        img_prefix ={'img_prefix':path_des}
+                        instance = {'img_info': image_data,'img_prefix':path_des}
                         data_val.append(instance)
                         last_id_test = id+1
 
                     elif path_des == test_path :
                         image_data = {'id': id-last_id_test, 'filename': name,'end_frame':end} 
                         img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':destination_path}
-                        instance = {'img_info': image_data,'img_prefix':destination_path}
+                        img_prefix ={'img_prefix':path_des}
+                        instance = {'img_info': image_data,'img_prefix':path_des}
                         data_test.append(instance) 
 
                     else :           

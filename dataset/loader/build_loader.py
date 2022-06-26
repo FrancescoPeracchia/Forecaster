@@ -50,8 +50,9 @@ def build_dataloader(dataset,
     num_workers = workers_per_gpu
     print('BATCH SIZE: ',batch_size)
     print('num_workers : ',num_workers)
-
+    print('sample ann_file',dataset.ann_file)
     sampler = CustomSampler(dataset,sequence)
+
 
     init_fn = partial(
         worker_init_fn, num_workers=num_workers, rank=rank,

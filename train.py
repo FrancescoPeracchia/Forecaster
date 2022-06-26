@@ -2,6 +2,7 @@ from __future__ import division
 import argparse
 import copy
 import warnings
+from xmlrpc.client import boolean
 from PS.mmdet.models import efficientps
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
@@ -39,6 +40,7 @@ def parse_args():
                         ,False if is already computed and you want to generate only results from predictions')
     parser.add_argument('--work_dir', help='the dir to save logs and models')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
+    parser.add_argument('--type', default='Train', help='allows you to decide what to do Train/Test/All')
 
     args = parser.parse_args()
 
@@ -54,6 +56,8 @@ def main():
 
     output_path = args.output
     GT = args.gt
+    MODALITY = args.type
+
 
     cfg = Config.fromfile(args.config)
 
@@ -81,10 +85,22 @@ def main():
     cfg.data.train['data_root'] = str(directory+cfg.data.train['data_root'])
     print('data_root path :', cfg.data.train['data_root'])
 
+    cfg.data.validation['ann_file'] = str(directory+cfg.data.validation['ann_file'])
+    print('ann_file path :', cfg.data.validation['ann_file'])
+
+    cfg.data.validation['data_root'] = str(directory+cfg.data.validation['data_root'])
+    print('data_root path :', cfg.data.validation['data_root'])
+
+    cfg.data.test['ann_file'] = str(directory+cfg.data.test['ann_file'])
+    print('ann_file path :', cfg.data.test['ann_file'])
+
+    cfg.data.test['data_root'] = str(directory+cfg.data.test['data_root'])
+    print('data_root path :', cfg.data.test['data_root'])
+
     #lists of datesets
     datasets = [build_dataset(cfg.data.train)]
-    datasets_val = [build_dataset(cfg.data.train)]
-    datasets_test = [build_dataset(cfg.data.train)]
+    datasets_val = [build_dataset(cfg.data.validation)]
+    datasets_test = [build_dataset(cfg.data.test)]
 
 
     #lists of dataloaders
@@ -105,7 +121,7 @@ def main():
             cfg.data.workers_per_gpu,
             seed=cfg.seed) for ds in datasets_val
     ]
-
+    '''
     data_loaders_test = [
         build_dataloader(
             ds,
@@ -114,7 +130,7 @@ def main():
             cfg.data.workers_per_gpu,
             seed=cfg.seed) for ds in datasets_test
     ]
-
+    '''
 
     #optimizer_low = torch.optim.SGD(model.predictor.f2f_low.parameters(), lr=0.001, momentum=0.9)
     #optimizer_medium = torch.optim.SGD(model.predictor.f2f_medium.parameters(), lr=0.001, momentum=0.9)
@@ -125,6 +141,13 @@ def main():
     def train_one_epoch(epoch_index, tb_writer):
         running_loss = 0.
         last_loss = 0.
+        res_32 = np.array([])
+        res_64 = np.array([])
+        res_128 = np.array([])
+        res_256 = np.array([])
+        res_loss = np.array([])
+        log_loss_dict = {'low':res_256,'medium':res_128,'high':res_64,'huge':res_32,'loss':res_loss}
+ 
 
         # Here, we use enumerate(training_loader) instead of
         # iter(training_loader) so that we can track the batch
@@ -132,24 +155,23 @@ def main():
         for i, data in enumerate(data_loaders[0]):
             print('Processed set n.: ',i)
             
-            # Every data instance is an input + label pair
 
             # Zero your gradients for every batch!
-            #optimizer_low.zero_grad()
-            #optimizer_medium.zero_grad()
-            #optimizer_high.zero_grad()
-            #optimizer_huge.zero_grad()
             optimizer.zero_grad()
 
             # Make predictions for this batch
             losses = model(data,cfg.modality['target'])
             #print(losses)
 
-           
+            
             loss,log_vars = parse_loss(losses)
-
-            
-            
+            #loss is the sum of all the individual losses 
+            #log_vars is Ordered Dictionary
+            for log_var in log_vars:
+                log = log_vars[log_var]
+                print('log',log_var,'is : ',log)
+                print(log_loss_dict)
+                log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)
 
 
             # Compute the loss gradients
@@ -157,135 +179,115 @@ def main():
 
             # Adjust learning weights
             optimizer.step()
-            #optimizer_low.step()
-            #optimizer_medium.step()
-            #optimizer_high.step()
-            #optimizer_huge.step()
+
             print('loss this triple',loss.item())
-            
 
-            # Gather data and report
-            running_loss += losses['low'].item()
-            if i % 10 == 9:
-                last_loss = running_loss / 10
-                print('loss after set n.: ',i, ' value : ',last_loss)
-                 # loss per batch
-    
 
-        return last_loss
+
+        return last_loss,log_loss_dict
+
+
+
 
 
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    writer = SummaryWriter('runs/fashion_trainer_{}'.format(timestamp))
-    epoch_number = 0
-    EPOCHS = 0
-
-    for epoch in range(EPOCHS):
-        print('EPOCH {}:'.format(epoch_number + 1))
-
+    writer = SummaryWriter('runs/MODEL_1_TRAINING{}'.format(timestamp))
     
-        #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
-        #it ll generatate a model with efficientPS parts for training activated
-        model.predictor.train()
-        avg_loss = train_one_epoch(epoch_number, writer)
-        print('avg_loss',avg_loss)
+    
+    if MODALITY == 'TRAIN' or MODALITY == 'TEST' :
+        print('TRAINING')
+        epoch_number = 0
+        EPOCHS = 2
+
+        for epoch in range(EPOCHS):
+            print('EPOCH {}:'.format(epoch_number + 1))
+
         
+            #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
+            #it ll generatate a model with efficientPS parts for training activated
+            model.predictor.train()
+            avg_loss,loss_dict = train_one_epoch(epoch_number, writer)
+            for log in loss_dict:
+                print('log ', log)
+                print(loss_dict[log])
+                mean = np.mean(loss_dict[log])
+                print('mean for ', log , 'is ',mean)
+                t= os.path.join('Loss',str(log))
+                writer.add_scalar(t,mean,epoch)
+            print('avg_loss',avg_loss)
+            
 
-        model.eval()
-        #note model.efficientps is already at eval() you could even use model.predictor.eval()
-        with torch.no_grad():
-            print('VALIDATION ')
-            for i, data in enumerate(data_loaders_test[0]):
+            model.eval()
+            #note model.efficientps is already at eval() you could even use model.predictor.eval()
+            with torch.no_grad():
+                print('VALIDATION ')
+                for i, data in enumerate(data_loaders_val[0]):
+                    #todo
+                    pass
 
 
-        epoch_number += 1
+            epoch_number += 1
 
     
-
-    torch.save(model,'')
+    PATH = '/home/fperacch/Forecaster/saved/model.pth'
+    torch.save(model,PATH)
 
     model.eval()
     PALETTE.append([0,0,0])
     colors = np.array(PALETTE, dtype=np.uint8)
     
     
-    with torch.no_grad():
-        for i, data in enumerate(data_loaders_test[0]):
-            print('TEST Processed set n.: ',i)
+    if MODALITY == 'TEST' or MODALITY == 'ALL':
+        print('TEST')
+        with torch.no_grad():
+            for i, data in enumerate(data_loaders_val[0]):
+                print('TEST Processed set n.: ',i)
 
 
-            pre_out,gt_out = model(data,cfg.modality['target'],return_loss = False)
+                pre_out,gt_out = model(data,cfg.modality['target'],return_loss = False)
 
-           
-            img_info = datasets[0].get_ann_info(data['id'][3])['img_info']
-            path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
-            imgName = img_info['filename']
-    
-     
-            prediction_path = os.path.join(output_path,'forecasted')
-            list_path =[prediction_path]
-            features = [pre_out]
-            if GT :
-                features.append(gt_out)
-                gt_path = os.path.join(output_path,'gt')
-                list_path.append(gt_path)
             
-
-            for i,feature in enumerate(features):
-                save_path = list_path[i]
-                result = inference_detector(model.efficientps,path_target_image,feature, eval='panoptic',)
-                pan_pred, cat_pred, _ = result[0]
-
+                img_info = datasets[0].get_ann_info(data['id'][3])['img_info']
+                path_target_image = datasets[0].get_ann_info(data['id'][3])['filename_complete']
+                imgName = img_info['filename']
+        
+        
+                prediction_path = os.path.join(output_path,'forecasted')
+                list_path =[prediction_path]
+                features = [pre_out]
+                if GT :
+                    features.append(gt_out)
+                    gt_path = os.path.join(output_path,'gt')
+                    list_path.append(gt_path)
                 
-                img = Image.open(path_target_image)
-                out_path = os.path.join(save_path, imgName)
 
-                sem = cat_pred[pan_pred].numpy()
-                sem_tmp = sem.copy()
-                sem_tmp[sem==255] = colors.shape[0] - 1
-                sem_img = Image.fromarray(colors[sem_tmp])
+                for i,feature in enumerate(features):
+                    save_path = list_path[i]
+                    result = inference_detector(model.efficientps,path_target_image,feature, eval='panoptic',)
+                    pan_pred, cat_pred, _ = result[0]
 
-                is_background = (sem < 11) | (sem == 255)
-                pan_pred = pan_pred.numpy() 
-                pan_pred[is_background] = 0
+                    
+                    img = Image.open(path_target_image)
+                    out_path = os.path.join(save_path, imgName)
 
-                contours = find_boundaries(pan_pred, mode="outer", background=0).astype(np.uint8) * 255
-                contours = dilation(contours)
+                    sem = cat_pred[pan_pred].numpy()
+                    sem_tmp = sem.copy()
+                    sem_tmp[sem==255] = colors.shape[0] - 1
+                    sem_img = Image.fromarray(colors[sem_tmp])
 
-                contours = np.expand_dims(contours, -1).repeat(4, -1)
-                contours_img = Image.fromarray(contours, mode="RGBA")
+                    is_background = (sem < 11) | (sem == 255)
+                    pan_pred = pan_pred.numpy() 
+                    pan_pred[is_background] = 0
 
-                out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
-                out = Image.alpha_composite(out, contours_img)
-                out.convert(mode="RGB").save(out_path)
+                    contours = find_boundaries(pan_pred, mode="outer", background=0).astype(np.uint8) * 255
+                    contours = dilation(contours)
 
+                    contours = np.expand_dims(contours, -1).repeat(4, -1)
+                    contours_img = Image.fromarray(contours, mode="RGBA")
 
-
-
-
-    
-
-
-
-
-
-
-'''
-train_image = next(iter_data)
-#print('train_image',train_image)
-
-predictions_loss = model(train_image,cfg.modality['target'])
-print(predictions_loss)
-
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
-'''
-
-
-
-
-
-
- 
+                    out = Image.blend(img, sem_img, 0.5).convert(mode="RGBA")
+                    out = Image.alpha_composite(out, contours_img)
+                    out.convert(mode="RGB").save(out_path)
 
 
 
