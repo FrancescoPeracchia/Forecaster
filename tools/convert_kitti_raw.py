@@ -170,19 +170,19 @@ def main(args):
     if RESIZE :
         count_train = 0 
         for name in os.listdir(training_path):
-            print('Resizing TRAIN',count_train,'/',len_data_train)
+            print('Resizing TRAIN',count_train,'/',len_data_train-1)
             resize(training_path,name,(2048,1024))
             count_train +=1
         
         count_validation = 0
         for name in os.listdir(validation_path):
-            print('Resizing VALIDATION',count_validation,'/',len_data_val)
+            print('Resizing VALIDATION',count_validation,'/',len_data_val-1)
             resize(validation_path,name,(2048,1024))
             count_validation +=1
 
         count_test = 0
         for name in os.listdir(test_path):
-            print('Resizing ',count_test,'/',len_data_test)
+            print('Resizing ',count_test,'/',len_data_test-1)
             resize(test_path,name,(2048,1024))
             count_test +=1
 

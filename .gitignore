@@ -2,6 +2,8 @@ data/
 inference/
 checkpoint/
 runs/
-efficientPS_kitti
+efficientPS_kitti/
+
 *.vscode
 *.zip
+*.pth

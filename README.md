@@ -1,8 +1,13 @@
 # Forecaster
+<<<<<<< HEAD
+=======
+## Introduction
+>>>>>>> d945362a727681ce1d0373f37ac01054c1c08432
 
 
 <details>
   <summary>DATASET</summary>
+<<<<<<< HEAD
 
   ##### Folder structure
 
@@ -86,3 +91,33 @@ F2F
 
 
 
+=======
+  
+  ## Heading
+  1. Download Raw Kitti 
+  2. Extract images
+     * With some
+     * Sub bullets
+</details>
+
+
+
+
+<details>
+  <summary>MODEL</summary>
+  
+  ## Heading
+  1. Download Raw Kitti 
+  2. Extract images
+     * With some
+     * Sub bullets
+  
+  
+  ## Heading
+   1. Download Raw Kitti 
+  2. Extract images
+     * With some
+     * Sub bullets
+</details>
+
+>>>>>>> d945362a727681ce1d0373f37ac01054c1c08432

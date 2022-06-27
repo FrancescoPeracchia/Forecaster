@@ -139,8 +139,7 @@ def main():
     optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.001, momentum=0.9)
 
     def train_one_epoch(epoch_index, tb_writer):
-        running_loss = 0.
-        last_loss = 0.
+        last_loss = np.array([])
         res_32 = np.array([])
         res_64 = np.array([])
         res_128 = np.array([])
@@ -167,10 +166,10 @@ def main():
             loss,log_vars = parse_loss(losses)
             #loss is the sum of all the individual losses 
             #log_vars is Ordered Dictionary
+            print('log',log_vars)
+
             for log_var in log_vars:
                 log = log_vars[log_var]
-                print('log',log_var,'is : ',log)
-                print(log_loss_dict)
                 log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)
 
 
@@ -180,11 +179,48 @@ def main():
             # Adjust learning weights
             optimizer.step()
 
-            print('loss this triple',loss.item())
+            #print('loss this triple',loss.item())
+        lasts_loss = np.append(last_loss,log)
+        average_loss = np.mean(lasts_loss)
 
 
+        return average_loss,log_loss_dict
 
-        return last_loss,log_loss_dict
+    def validation(epoch_index, tb_writer):
+        last_loss = np.array([])
+        res_32 = np.array([])
+        res_64 = np.array([])
+        res_128 = np.array([])
+        res_256 = np.array([])
+        res_loss = np.array([])
+        log_loss_dict = {'low':res_256,'medium':res_128,'high':res_64,'huge':res_32,'loss':res_loss}
+ 
+
+        # Here, we use enumerate(training_loader) instead of
+        # iter(training_loader) so that we can track the batch
+        # index and do some intra-epoch reporting
+        for i, data in enumerate(data_loaders_val[0]):
+            print('Processed set n.: ',i)
+            # Make predictions for this batch
+            losses = model(data,cfg.modality['target'])
+            #print(losses)
+            loss,log_vars = parse_loss(losses)
+            #loss is the sum of all the individual losses 
+            #log_vars is Ordered Dictionary
+            print('log',log_vars)
+
+            for log_var in log_vars:
+                log = log_vars[log_var]
+                log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)
+
+
+          
+            #print('loss this triple',loss.item())
+        lasts_loss = np.append(last_loss,log)
+        average_loss = np.mean(lasts_loss)
+
+
+        return average_loss,log_loss_dict
 
 
 
@@ -194,10 +230,10 @@ def main():
     writer = SummaryWriter('runs/MODEL_1_TRAINING{}'.format(timestamp))
     
     
-    if MODALITY == 'TRAIN' or MODALITY == 'TEST' :
+    if MODALITY == 'TRAIN' or MODALITY == 'ALL':
         print('TRAINING')
         epoch_number = 0
-        EPOCHS = 2
+        EPOCHS = 10
 
         for epoch in range(EPOCHS):
             print('EPOCH {}:'.format(epoch_number + 1))
@@ -207,23 +243,27 @@ def main():
             #it ll generatate a model with efficientPS parts for training activated
             model.predictor.train()
             avg_loss,loss_dict = train_one_epoch(epoch_number, writer)
+            print('avg_loss',avg_loss)
+
             for log in loss_dict:
-                print('log ', log)
-                print(loss_dict[log])
                 mean = np.mean(loss_dict[log])
-                print('mean for ', log , 'is ',mean)
                 t= os.path.join('Loss',str(log))
                 writer.add_scalar(t,mean,epoch)
-            print('avg_loss',avg_loss)
+            
             
 
             model.eval()
             #note model.efficientps is already at eval() you could even use model.predictor.eval()
             with torch.no_grad():
                 print('VALIDATION ')
-                for i, data in enumerate(data_loaders_val[0]):
-                    #todo
-                    pass
+                avg_loss_val,loss_dict_val = validation(epoch_number, writer)
+                print('avg_loss_val',avg_loss_val)
+
+                for log in loss_dict_val:
+                    mean = np.mean(loss_dict_val[log])
+                    t= os.path.join('Loss_validation',str(log))
+                    writer.add_scalar(t,mean,epoch)
+                    
 
 
             epoch_number += 1
@@ -237,7 +277,7 @@ def main():
     colors = np.array(PALETTE, dtype=np.uint8)
     
     
-    if MODALITY == 'TEST' or MODALITY == 'ALL':
+    if MODALITY == 'TEST'or MODALITY == 'ALL':
         print('TEST')
         with torch.no_grad():
             for i, data in enumerate(data_loaders_val[0]):

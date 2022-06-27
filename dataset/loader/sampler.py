@@ -189,7 +189,7 @@ class CustomSampler(Sampler):
         indices = self.convertbis(list(range(len(self.data_source))),self.sequence)
         print('FILTERING INDICES FROM DIFFERENT VIDEO-CLIPS')
 
-        self.indices = self.filter_clips(indices,self.sequence)
+        self.indices = self.filter_clips_efficient(indices,self.sequence)
 
     def __iter__(self):
 
@@ -264,4 +264,42 @@ class CustomSampler(Sampler):
                 final.append(list)
 
         return final
-                
+
+
+    def filter_clips_efficient(self,temp,sequence):
+        list_ = []
+        pre_filter =[]
+        final = []
+        print('Creating list....')
+        for i in trange(len(temp)):
+            element = temp[i]       
+            list_.append(element)
+            if(len(list_)) == len(sequence):
+                pre_filter.append(list_)
+                list_ = []
+
+        print('Filtering....')
+        for i in trange(len(pre_filter)):
+            list = pre_filter[i]
+            mixed = False
+            clip = self.data_source[list[0]]['clip']
+            #print('processing',list,'clip',clip)
+            
+
+            init = list[0]
+            end = list[len(list)-1]
+
+            clip_init = self.data_source[init]['clip']
+            clip_end = self.data_source[end]['clip']
+            
+
+            if clip_init == clip_end :
+                final.append(list)
+            else:
+                continue
+        
+        with open('/home/fperacch/Forecaster/temp/list.npy', 'wb') as f:
+            final_ = np.array(final)
+
+            np.save(f, final_)
+        return final
