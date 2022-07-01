@@ -5,7 +5,8 @@ runs/
 efficientPS_kitti/
 temp/
 tmpDir/
-
+tmpDir_GT/
+tmpDir_PRE/
 *.vscode
 *.zip
 *.pth
