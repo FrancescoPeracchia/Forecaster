@@ -1,4 +1,7 @@
+'''
+modality dict
 
+'''
 
 
 modality = dict(
@@ -6,10 +9,20 @@ frame_sequence = [-4, -2, 0, 2, 3, 4],
 target = [1,2,3]
 )
 
-predictor = dict (low = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
+
+
+'''
+model predictor variants 
+
+'''
+#first
+F2F_3DCONV = dict (  low = dict (kernel = (3,5,5),stride = (1,1,1), padding =(0,2,2),skip = True),
                     medium = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
                     high = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True),
                     huge = dict (kernel = (3,3,3),stride = (1,1,1), padding =(0,1,1),skip = True))
+
+pre_trained = '/home/fperacch/Forecaster/saved/model_predictor.pth',
+#change accordigly the desired predictor_config = dict (module_predictor,pre_trained weights),
 
 
 #_________________________________________________________________________
@@ -18,7 +31,7 @@ model = dict(
     efficientPS_config = '/inference/efficientPS_cityscapes/config/efficientPS_multigpu_sample.py',
     efficientPS_checkpoint = '/inference/efficientPS_cityscapes/model/model.pth',
     multi_forecasting_modality = False,
-    predictor_config = predictor,
+    predictor_config = dict (model = F2F_3DCONV, weights = pre_trained),
     type='Forecaster'
     )
 
@@ -65,7 +78,7 @@ data_root = 'data/cityscapes/'
 
 data = dict(
     imgs_per_gpu=1,
-    workers_per_gpu=2,
+    workers_per_gpu=1,
     train=dict(
         type=dataset_type,
         ann_file ='/data/KITTI/train.json',

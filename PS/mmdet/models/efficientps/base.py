@@ -167,6 +167,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
             """
             if 'proposals' in kwargs:
                 kwargs['proposals'] = kwargs['proposals'][0]
+                
             return self.simple_test_forecasting(features, img_metas[0], eval=eval, **kwargs)
         else:
             # TODO: support test augmentation for predefined proposals
@@ -176,7 +177,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
 
 
     @auto_fp16(apply_to=('img', ))
-    def forward(self, img, img_metas,features, return_loss=True, eval=None, forecasting=False, **kwargs):
+    def forward(self, img, img_metas,features=None, return_loss=True, eval=None, forecasting=False, **kwargs):
         """
         Calls either forward_train or forward_test depending on whether
         return_loss=True. Note this setting will change the expected inputs.

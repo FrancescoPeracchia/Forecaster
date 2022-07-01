@@ -27,15 +27,18 @@ def main(args):
     _ensure_dir(args.out_dir)
 
     #previous folder are deleted and recreated
+    print('Delete previous training data')
     training_path = path.join(args.out_dir, "training")
     shutil.rmtree(training_path)
     _ensure_dir(training_path)
 
+    print('Delete previous validation data')
     #previous folder are deleted and recreated
     validation_path = path.join(args.out_dir, "validation")
     shutil.rmtree(validation_path)
     _ensure_dir(validation_path)
 
+    print('Delete previous test data')
     #previous folder are deleted and recreated
     test_path = path.join(args.out_dir, "test")
     shutil.rmtree(test_path)

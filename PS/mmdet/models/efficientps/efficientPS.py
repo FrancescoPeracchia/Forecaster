@@ -296,6 +296,7 @@ class EfficientPS(BaseDetector):
         #print('pipe line loss',loss_pipe)
 
         x = []
+        
         for feature in features:
             
             f = features[feature]

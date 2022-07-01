@@ -189,16 +189,27 @@ class CustomSampler(Sampler):
         indices = self.convertbis(list(range(len(self.data_source))),self.sequence)
         print('FILTERING INDICES FROM DIFFERENT VIDEO-CLIPS')
 
-        self.indices = self.filter_clips_efficient(indices,self.sequence)
+        self.indices = self.filter_clips_efficient_all(indices,self.sequence)
 
     def __iter__(self):
 
        
         #gives in output list of list after filter process
         #we need to reacreate a unique list
-        filtered_indices = []
-        for i in self.indices:
-            filtered_indices.extend(i)
+        #filtered_indices = []
+        
+        #for i in self.indices:
+            
+        #    filtered_indices.extend(i)
+
+        
+        
+        #only with preallocation
+        filtered_indices = self.indices
+        
+        print('INDICES------------',filtered_indices)
+        print('len', len(filtered_indices)/6)
+
 
         return iter(filtered_indices)
 
@@ -267,6 +278,7 @@ class CustomSampler(Sampler):
 
 
     def filter_clips_efficient(self,temp,sequence):
+        
         list_ = []
         pre_filter =[]
         final = []
@@ -303,3 +315,54 @@ class CustomSampler(Sampler):
 
             np.save(f, final_)
         return final
+
+
+
+    def filter_clips_efficient_all(self,temp,sequence):
+        
+        list_ = []
+        pre_filter =[]
+        print('Creating list....')
+        for i in trange(len(temp)):
+            element = temp[i]       
+            list_.append(element)
+            if(len(list_)) == len(sequence):
+                pre_filter.append(list_)
+                list_ = []
+
+        print('Filtering....')
+
+        final = [None]*(len(pre_filter)*6)
+        last_id = 0
+
+
+        for i in trange(len(pre_filter)):
+            list = pre_filter[i]
+            mixed = False
+            clip = self.data_source[list[0]]['clip']
+            #print('processing',list,'clip',clip)
+            
+
+            init = list[0]
+            end = list[len(list)-1]
+
+            clip_init = self.data_source[init]['clip']
+            clip_end = self.data_source[end]['clip']
+            
+
+            if clip_init == clip_end :
+                for i in range(len(list)):
+                    final[last_id] = list[i]
+                    last_id +=1
+            else:
+                continue
+        
+
+        final_fil = [i for i in final if i]
+        final_fil.insert(0, 0)
+        
+        with open('/home/fperacch/Forecaster/temp/list.npy', 'wb') as f:
+            final_ = np.array(final_fil)
+
+            np.save(f, final_)
+        return final_fil

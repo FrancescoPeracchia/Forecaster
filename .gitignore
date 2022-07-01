@@ -3,6 +3,8 @@ inference/
 checkpoint/
 runs/
 efficientPS_kitti/
+temp/
+tmpDir/
 
 *.vscode
 *.zip

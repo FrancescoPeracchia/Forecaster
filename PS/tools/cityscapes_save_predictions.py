@@ -62,7 +62,7 @@ def main():
 
             imageId = imgName.replace("_leftImg8bit.png", "")
             inputFileName = imgName
-            outputFileName = imgName.replace("_leftImg8bit.png", "_panoptic.png")
+            outputFileName = imgName.replace(".png", "_panoptic.png")
 
             img = Image.open(os.path.join(path, imgName))
             out_path = os.path.join(out_dir, outputFileName)

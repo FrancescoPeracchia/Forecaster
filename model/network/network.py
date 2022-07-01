@@ -1,3 +1,4 @@
+from cmath import e
 from operator import gt
 from mmdet.core import get_classes
 import warnings
@@ -18,7 +19,8 @@ class Forecaster(BaseForecaster):
                 multi_forecasting_modality,
                 forecaster_cfg,
                 train_cfg,
-                test_cfg
+                test_cfg,
+                eval
                 ):
   
         super(Forecaster,self).__init__()
@@ -43,7 +45,20 @@ class Forecaster(BaseForecaster):
         self.ps_output = dict(current=[],target=[],gt=[],time=[],index=[])
         self.head_input = dict(Predicted=[],GT=[])
 
-        self.predictor = F2F(forecaster_cfg)
+        self.predictor = F2F(forecaster_cfg.model)
+        
+
+        if eval :
+            PATH = forecaster_cfg.weights[0]
+            print('Loading pre-trained Forecaster...')
+            print('Forecaster Model checkpoint at : ',PATH)
+
+            checkpoint = torch.load(PATH)     
+            self.predictor.load_state_dict(checkpoint)
+            
+            self.predictor.eval()
+            self.freeze_forecaster()
+
 
         #self.init_weights(pretrained=self.pretrained)
 
@@ -54,6 +69,11 @@ class Forecaster(BaseForecaster):
     def freeze_ps(self):
         for param in self.efficientps.parameters():
             param.requires_grad = False
+
+    def freeze_forecaster(self):
+        for param in self.predictor.parameters():
+            param.requires_grad = False
+
 
     def init_detector(self, config, checkpoint=None, device='cuda:0'):
         """Initialize a detector from config file.
@@ -203,8 +223,6 @@ class Forecaster(BaseForecaster):
     
     def forward_ps(self,pre,gt,list_id,target):
         
-
-
         return
 
 
@@ -226,44 +244,22 @@ class Forecaster(BaseForecaster):
         
         features_dict = self.extract_ps(list_image)
         #return loss is false
-        pre_out,gt_out = self.predictor(features_dict, targets, return_loss=False)
+        predicted_features,gt_features = self.predictor(features_dict, targets, return_loss=False)
 
         #check is feature target is still the same
-        vera = features_dict['low'][3]
+        vera = features_dict['low'][3] 
         print('vera shape', vera.shape)
         print('feature dict',len(features_dict['low']))
-
-        gt = gt_out['low']
+        gt = gt_features['low']
         print('gt shape', gt.shape)
-
-
         loss_ = self.loss(vera, gt)
-        
-
         print('loss',loss_)
-        return pre_out,gt_out
-
-
-
-        '''
-        predicted
-        gt
-        list_id
-        target 
-
-        self.forward_ps(pre,gt,list_id,target)
-        '''
-
-
-
-
 
 
         
-        
+        return predicted_features,gt_features
 
 
-        return 
     
 
 
