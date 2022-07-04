@@ -119,7 +119,7 @@ class Resize_custom(object):
 
     def _resize_img(self, results):
         if self.keep_ratio:
-            print('here')
+            
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
         else:
@@ -294,7 +294,7 @@ class Resize(object):
 
     def _resize_img(self, results):
         if self.keep_ratio:
-            print('here')
+            
             img, scale_factor = mmcv.imrescale(
                 results['img'], results['scale'], return_scale=True)
         else:

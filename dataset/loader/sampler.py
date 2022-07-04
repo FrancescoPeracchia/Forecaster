@@ -207,8 +207,8 @@ class CustomSampler(Sampler):
         #only with preallocation
         filtered_indices = self.indices
         
-        print('INDICES------------',filtered_indices)
-        print('len', len(filtered_indices)/6)
+        #print('INDICES------------',filtered_indices)
+        #print('len', len(filtered_indices)/6)
 
 
         return iter(filtered_indices)

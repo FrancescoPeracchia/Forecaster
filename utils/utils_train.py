@@ -73,6 +73,8 @@ def inference_detector(model,img,feature,eval=None):
     return result
 
 def validation(cfg, model,data_loaders_val):
+
+    prog_bar = mmcv.ProgressBar(len(data_loaders_val[0]))
     last_loss = np.array([])
     res_32 = np.array([])
     res_64 = np.array([])
@@ -86,14 +88,14 @@ def validation(cfg, model,data_loaders_val):
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
     for i, data in enumerate(data_loaders_val[0]):
-        print('Processed set n.: ',i)
+        #print('Processed set n.: ',i)
         # Make predictions for this batch
         losses = model(data,cfg.modality['target'])
         #print(losses)
         loss,log_vars = parse_loss(losses)
         #loss is the sum of all the individual losses 
         #log_vars is Ordered Dictionary
-        print('log',log_vars)
+        #print('log',log_vars)
 
         for log_var in log_vars:
             log = log_vars[log_var]
@@ -104,6 +106,9 @@ def validation(cfg, model,data_loaders_val):
         #last processed log is 'loss' the one that we want to append for each prediction 
         #in the dataloader and then mean
         lasts_loss = np.append(last_loss,log)
+
+        for _ in range(len(log_loss_dict['low'])):
+            prog_bar.update()
     average_loss = np.mean(lasts_loss)
 
 
@@ -131,8 +136,9 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
+    prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
     for i, data in enumerate(data_loaders[0]):
-        print('Processed set n.: ',i)
+        
         
         
 
@@ -167,6 +173,9 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
         total_loss = total_loss.to('cpu')
         #print(total_loss)
         lasts_loss = np.append(last_loss,total_loss)
+       
+        for _ in range(data_loaders[0].batch_size):
+            prog_bar.update()
 
         
     average_loss = np.mean(lasts_loss)
@@ -175,3 +184,9 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
 
 
     return average_loss,log_loss_dict
+
+
+
+def get_lr(optimizer):
+    for param_group in optimizer.param_groups:
+        return param_group['lr']

@@ -1,20 +1,23 @@
 from __future__ import division
 import argparse
+import imp
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
 from mmcv import Config
 from PS.mmdet import __version__
 from dataset import build_dataset,build_dataloader
-from model import build_forecaster
+from models.model import build_forecaster
 from PS.mmdet.apis import set_random_seed
 from datetime import datetime
-from utils.utils_train import train_one_epoch, validation
+from utils.utils_train import train_one_epoch, validation, get_lr
 import numpy as np
 import os
 from torchsummary import summary
 
+
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.lr_scheduler import ExponentialLR,MultiStepLR
 
 
 
@@ -108,7 +111,10 @@ def main():
     
 
 
-    optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.05, momentum=0.9)
+    optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.5, momentum=0.9)
+    scheduler0 = ExponentialLR(optimizer, gamma=0.9)
+    scheduler1 = MultiStepLR(optimizer, milestones=[1,2], gamma=3)
+
 
 
     best_avg_loss_val = 9999
@@ -125,11 +131,25 @@ def main():
         avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
         print('avg_loss',avg_loss)
 
+
+    
+
+        
+
+
         #TENSORBOARD GRAPH VAL
         for log in loss_dict:
             mean = np.mean(loss_dict[log])
             t= os.path.join('Loss',str(log))
             writer.add_scalar(t,mean,epoch)
+        
+
+        lr = get_lr(optimizer)
+        scheduler0.step()
+        scheduler1.step()
+
+        #TENSORBOARD GRAPH VAL
+        writer.add_scalar('learning rate',lr,epoch)
         
         
 
@@ -145,6 +165,7 @@ def main():
                 mean = np.mean(loss_dict_val[log])
                 t= os.path.join('Loss_validation',str(log))
                 writer.add_scalar(t,mean,epoch)
+        
                 
 
 

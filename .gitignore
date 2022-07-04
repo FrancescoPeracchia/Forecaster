@@ -7,6 +7,8 @@ temp/
 tmpDir/
 tmpDir_GT/
 tmpDir_PRE/
+gt.json
 *.vscode
 *.zip
 *.pth
+*.

@@ -9,7 +9,7 @@ import torch
 from mmcv import Config
 from PS.mmdet import __version__
 from dataset import build_dataset,build_dataloader
-from model import build_forecaster
+from models.model import build_forecaster
 from PS.mmdet.apis import set_random_seed
 from torch.utils.tensorboard import SummaryWriter
 from datetime import datetime
@@ -110,12 +110,12 @@ def main():
             panoptics_result = evaluate(cfg, model, data_loaders_val,datasets_val)
 
 
-            avg_loss_val,loss_dict_val = validation(model, data_loaders_val)
-            print('avg_loss_val',avg_loss_val)
+            #avg_loss_val,loss_dict_val = validation(cfg, model,data_loaders_val)
+            #print('avg_loss_val',avg_loss_val)
 
-            for log in loss_dict_val:
-                mean = np.mean(loss_dict_val[log])
-                print('mean loss',log,' is : ',mean)
+            #for log in loss_dict_val:
+                #mean = np.mean(loss_dict_val[log])
+                #print('mean loss',log,' is : ',mean)
             
             
                 

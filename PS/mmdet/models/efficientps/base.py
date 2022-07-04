@@ -187,7 +187,7 @@ class BaseDetector(nn.Module, metaclass=ABCMeta):
         the outer list indicating test time augmentations.
         """
         if forecasting:
-            print('evaluation',eval)
+            #print('evaluation',eval)
             return self.forward_forecasting(img, img_metas,features, eval, **kwargs)
 
 

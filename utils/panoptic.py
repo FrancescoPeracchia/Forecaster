@@ -1,4 +1,7 @@
+from __future__ import annotations
+from email.mime import image
 import os
+from unicodedata import category
 import numpy as np
 import json
 
@@ -101,6 +104,12 @@ def save_panoptic_preditcted_gt(results_pre,results_gt):
                 'categories': {}}
             with open(os.path.join(base_json[i], imageId + '.json'), 'w') as f:
                 json.dump(d, f, sort_keys=True, indent=4)
+
+
+
+
+    
+    pass
 
     
 
