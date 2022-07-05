@@ -1,19 +1,17 @@
 '''
 modality dict
-
 '''
 
 
-modality = dict(
-frame_sequence = [-4, -2, 0, 2, 3, 4],
-target = [1,2,3]
+modality = dict(  frame_sequence = [-5, -3, 0, 3, 4, 5],
+                target = [1,2,3]
+
 )
 
 
 
 '''
 model predictor variants 
-
 '''
 #first
 F2F_3DCONV = dict (  low = dict (kernel = (3,5,5),stride = (1,1,1), padding =(0,2,2),skip = True),
@@ -101,30 +99,4 @@ evaluation = dict(interval=1, metric=['panoptic'])
 
 
 
-# optimizer
-optimizer = dict(type='SGD', lr=0.07, momentum=0.9, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=dict(max_norm=35, norm_type=2))
-# learning policy
-lr_config = dict(
-    policy='step',
-    warmup='linear',
-    warmup_iters=500,
-    warmup_ratio=1.0 / 3,
-    step=[120, 144])
-checkpoint_config = dict(interval=1)
-# yapf:disable
-log_config = dict(
-    interval=1,
-    hooks=[
-        dict(type='TextLoggerHook'),
-        dict(type='TensorboardLoggerHook')
-    ])
-# yapf:enable
-# runtime settings
-total_epochs = 160
-dist_params = dict(backend='nccl')
-log_level = 'INFO'
-work_dir = None
-load_from = None
-resume_from = None
-workflow = [('train', 1)]
+

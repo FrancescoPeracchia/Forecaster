@@ -1,10 +1,9 @@
 # Forecaster
-=======
 ## Introduction
 
 
 <details>
-  <summary>DATASET</summary>
+  <summary>Dataset</summary>
 
 
   ##### Folder structure
@@ -13,16 +12,14 @@
 F2F
 ├── configs
 ├── data
-|   ├── KITTI   
-|   └── RAW
 ├── dataset
 ├── inference
 ├── model
 ├── PS
 ├── runs
 └── tools
-├── PS
 ```
+
   
   ##### Download Raw Kitti
     
@@ -82,38 +79,13 @@ F2F
 
 </details>
 
-
-
-
-
-
-
-
-=======
-  
-  ## Heading
-  1. Download Raw Kitti 
-  2. Extract images
-     * With some
-     * Sub bullets
-</details>
-
-
-
-
 <details>
-  <summary>MODEL</summary>
-  
-  ## Heading
-  1. Download Raw Kitti 
-  2. Extract images
-     * With some
-     * Sub bullets
-  
-  
-  ## Heading
-   1. Download Raw Kitti 
-  2. Extract images
-     * With some
-     * Sub bullets
+<summary>Training & Testing</summary>
+##### Folder structure
+
+```bash
+python train.py /home/fperacch/Forecaster/configs/3DConv_00_20.py /home/fperacch/Forecaster/saved 
+```
+
 </details>
+

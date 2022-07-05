@@ -1,6 +1,5 @@
 from __future__ import division
 import argparse
-import imp
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
@@ -51,7 +50,7 @@ def main():
     print('Config path :', cfg.model['efficientPS_config'])
 
     cfg.model['efficientPS_checkpoint'] = str(directory+cfg.model['efficientPS_checkpoint'])
-    print('Checkpoint path :', cfg.model['efficientPS_checkpoint'])
+    print('PS Checkpoint path loaded :', cfg.model['efficientPS_checkpoint'])
 
     if args.seed is not None:
         set_random_seed(args.seed, deterministic=args.deterministic)
@@ -113,17 +112,23 @@ def main():
 
     optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.5, momentum=0.9)
     scheduler0 = ExponentialLR(optimizer, gamma=0.9)
-    scheduler1 = MultiStepLR(optimizer, milestones=[1,2], gamma=3)
+    scheduler1 = MultiStepLR(optimizer, milestones=[5,11,18,26,35,45,56,68], gamma=1.6)
 
 
 
     best_avg_loss_val = 9999
     epoch_number = 0
-    EPOCHS = 20
+    EPOCHS = 70
 
 
     for epoch in range(EPOCHS):
         print('EPOCH {}:'.format(epoch_number + 1))
+        
+        lr = get_lr(optimizer)
+        #TENSORBOARD GRAPH VAL
+        writer.add_scalar('learning rate',lr,epoch)
+
+        
 
         #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
         #it ll generatate a model with efficientPS parts for training activated
@@ -144,13 +149,11 @@ def main():
             writer.add_scalar(t,mean,epoch)
         
 
-        lr = get_lr(optimizer)
+        
         scheduler0.step()
         scheduler1.step()
 
-        #TENSORBOARD GRAPH VAL
-        writer.add_scalar('learning rate',lr,epoch)
-        
+       
         
 
         model.eval()
