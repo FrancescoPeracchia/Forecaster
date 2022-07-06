@@ -73,6 +73,7 @@ def main(args):
 
                 names =[]   
                 id_list = [] 
+                relative_id_list = []
                 last = [] 
                 all_list_destination_path = []
                     
@@ -104,11 +105,16 @@ def main(args):
                     list_,id,id_list = get_immediate_name_files(folder,list_path,id,id_list,target_path=destination_path,original_path=folder_path)
                     
                     last_list =[counter for i in range(len(list_))]
+                    relative_id = [i for i in range(len(list_))]
                     list_destination_path = [destination_path for i in range(len(list_))]
                     counter += 1
+                    target = [-4,-2,0,2,4,6]
+                    list_target = get_previus_past_images_id(relative_id,target)
+
                     
 
                     last.extend(last_list)
+                    relative_id_list.extend(list_target)
                     all_list_destination_path.extend(list_destination_path)
                     names.extend(list_)
                         
@@ -125,8 +131,9 @@ def main(args):
                 assert len(names)==len(id_list)
                 assert len(last)==len(id_list)
                 assert len(all_list_destination_path)==len(id_list)
+                assert len(relative_id_list)==len(id_list)
 
-                for id,name,end,path_des in zip (id_list,names,last,all_list_destination_path):
+                for id,name,end,list_images,path_des in zip (id_list,names,last,relative_id_list,all_list_destination_path):
                     
                     #print('id:',id)
                     #print('name:',name)
@@ -134,29 +141,39 @@ def main(args):
                     #last ids works only because first are processed all training images 
                     #then all validation
                     #and finally all test
+
                     
 
                     if path_des == training_path :
-                        image_data = {'id': id, 'filename': name,'end_frame':end} 
-                        img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':path_des}
-                        instance = {'img_info': image_data,'img_prefix':path_des}
+                        image_data = {'id': id, 'filename': name,'end_frame':end}
+                        if list_images is not None :
+                            temp_list = [0,0,0,0,0,0] 
+                            for i,t in enumerate(target):
+                                temp_list[i] = id+t
+                            list_images = temp_list
+                        instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_train.append(instance)
                         last_id_train = id+1
 
                     elif path_des == validation_path :
                         image_data = {'id': id-last_id_train, 'filename': name,'end_frame':end} 
-                        img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':path_des}
-                        instance = {'img_info': image_data,'img_prefix':path_des}
+                        if list_images is not None :
+                            temp_list = [0,0,0,0,0,0]  
+                            for i,t in enumerate(target):
+                                temp_list[i] = id-last_id_train+t 
+                            list_images = temp_list
+                        instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_val.append(instance)
                         last_id_test = id+1
 
                     elif path_des == test_path :
-                        image_data = {'id': id-last_id_test, 'filename': name,'end_frame':end} 
-                        img_info = {'img_info': image_data}
-                        img_prefix ={'img_prefix':path_des}
-                        instance = {'img_info': image_data,'img_prefix':path_des}
+                        image_data = {'id': id-last_id_test, 'filename': name,'end_frame':end}
+                        if list_images is not None :
+                            temp_list = [0,0,0,0,0,0]
+                            for i,t in enumerate(target):
+                                temp_list[i] = id-last_id_test+t 
+                            list_images = temp_list
+                        instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_test.append(instance) 
 
                     else :           
@@ -166,6 +183,7 @@ def main(args):
                 len_data_train = len(data_train)
                 len_data_val = len(data_val)
                 len_data_test = len(data_test)
+                print('data leng test',len_data_test)
                 json.dump(data_train,f,indent=2)
                 json.dump(data_val,v,indent=2)
                 json.dump(data_test,t,indent=2)
@@ -237,6 +255,34 @@ def resize(path,name,dim):
     img = cv2.imread(name_path,cv2.IMREAD_UNCHANGED)
     resized = cv2.resize(img, dim, interpolation = cv2.INTER_AREA)
     cv2.imwrite(name_path,resized)
+
+
+
+def get_previus_past_images_id(relative_ids,target):
+    inferior_limit = target[0]
+    superior_limit = target[5]
+    list_ = []
+    
+    for relative_id in relative_ids :
+        first =  relative_id + inferior_limit
+        last =  relative_id + superior_limit
+        print('relative',relative_id)
+        print('first',first)
+        print('last',last)
+       
+
+        if first >= 0 and last <= len (relative_ids):
+            list_.append(True)
+        else:
+            list_.append(None)
+    
+    return list_
+        
+
+
+
+
+
     
 
 
