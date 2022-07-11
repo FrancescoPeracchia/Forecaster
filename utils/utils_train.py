@@ -88,6 +88,10 @@ def validation(cfg, model,data_loaders_val):
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
     for i, data in enumerate(data_loaders_val[0]):
+        if data['ids'] == 0 :
+            for _ in range(data_loaders_val[0].batch_size):
+                prog_bar.update()
+            continue
         #print('Processed set n.: ',i)
         # Make predictions for this batch
         losses = model(data,cfg.modality['target'])
@@ -138,19 +142,25 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     # index and do some intra-epoch reporting
     prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
     for i, data in enumerate(data_loaders[0]):
+
         
-        
-        
+        if data['ids'] == 0 :
+            #print('skipped')
+            for _ in range(data_loaders[0].batch_size):
+                prog_bar.update()
+            continue
+            
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
 
         # Make predictions for this batch
         losses = model(data,cfg.modality['target'])
-        #print(losses)
+        
 
         
         loss,log_vars = parse_loss(losses)
+        
         #loss is the sum of all the individual losses 
         #log_vars is Ordered Dictionary
         

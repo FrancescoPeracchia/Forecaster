@@ -49,15 +49,17 @@ img_norm_cfg = dict(
 
 train_pipeline = [
     dict(type='LoadImageFromFile'),
-    dict(type='Resize_custom', img_scale=(2048, 1024), ratio_range=(0.5, 2.0), keep_ratio=False),
+    dict(type='Resize_custom', img_scale=(1024, 512), ratio_range=(0.5, 2.0), keep_ratio=False),
     dict(type='Normalize', **img_norm_cfg),
     dict(type='Pad', size_divisor=32)
 ]
+
+
 test_pipeline = [
     dict(type='LoadImageFromFile'),
     dict(
         type='MultiScaleFlipAug',
-        img_scale=(2048, 1024),
+        img_scale=(1024, 512),
         flip=False,
         transforms=[
             dict(type='Resize_custom'),

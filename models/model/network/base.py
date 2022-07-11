@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import List
 
 import mmcv
 import numpy as np
@@ -15,6 +16,7 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
     def __init__(self):
         super(BaseForecaster, self).__init__()
         self.device = 'cuda:0'
+        
     
 
 
@@ -35,28 +37,34 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
        
     @auto_fp16(apply_to=('img', ))
     def forward(self, input, targets, return_loss=True, eval=None, **kwargs):
+        
 
-        #from torch.Size([3, 1024, 2048, 3])
-        #to list of  torch.Size([1024, 2048, 3])
-        imgs = input['img']        
-        ids = input['id']
+        
+        ids = input['ids']
+        imgs = input['img']
+                
+       
         list_image = []
-        list_id = []        
-        for image in range(imgs.size()[0]):
-            
-            im = imgs[image,:,:,:]           
-            #print('shape',im.shape)
-            im = torch.transpose(im, 0, 2)
-            im = torch.transpose(im, 1, 2)
-            im = torch.unsqueeze(im, 0).float().to(self.device)
-            #print('shape',im.shape)
+       
+        
+        for image in imgs:
+               
+            #print('shape',image.shape)
+            image = torch.squeeze(image, 0)
+            image = torch.transpose(image, 0, 2)   
+            #print('shape',image.shape)
+            image = torch.transpose(image, 1, 2)
+            #print('shape',image.shape)
+            im = torch.unsqueeze(image, 0).float().to(self.device)
             list_image.append(im)
-            list_id.append(int(ids[image]))
+     
+        #print('ids',ids)
+
         
 
 
         if return_loss:
-            return self.forward_train(list_image,list_id, targets, **kwargs)
+            return self.forward_train(list_image,ids, targets, **kwargs)
         else:
-            return self.forward_test(list_image,list_id, targets, **kwargs)
+            return self.forward_test(list_image,ids, targets, **kwargs)
 

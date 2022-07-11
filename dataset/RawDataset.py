@@ -1,4 +1,5 @@
 
+from email.mime import image
 from operator import index
 from time import process_time_ns
 from torch.utils.data import Dataset
@@ -79,9 +80,34 @@ class RawDataset(Dataset):
             
         
             #print(self.img_infos[idx])
-            data['img'] = self.prepare_train_img(idx)['img']
-            data['clip'] = self.img_infos[idx]['img_info']['end_frame']
-            data['id'] = self.img_infos[idx]['img_info']['id']
+            images_indeces = self.img_infos[idx]['list_images']
+            images = []
+            ids = []
+           
+            if images_indeces is None:
+                
+                #print(images_indeces)
+                #print('going to be skipped')
+                data['ids'] = 0               
+                return data
+            
+            else:
+                
+                for index in images_indeces:
+
+                    #print(index)
+                    image = self.prepare_train_img(index)['img']
+                    print(len(image))
+                    images.append(image)
+                    ids.append(index)
+
+
+                    
+                data['img'] = images
+                data['ids'] = ids
+                data['clip'] = self.img_infos[idx]['img_info']['end_frame']
+                data['id'] = self.img_infos[idx]['img_info']['id']
+            
                 
                    
             return data

@@ -1,5 +1,6 @@
 from __future__ import division
 from errno import ESTALE
+from itertools import count
 import math
 from select import select
 import numpy as np
@@ -366,3 +367,35 @@ class CustomSampler(Sampler):
 
             np.save(f, final_)
         return final_fil
+
+
+
+
+import gc
+
+class Kitti_Sampler(Sampler):
+
+    
+
+    def __init__(self, data_source,sequence):
+
+        print("FORECASTING SAMPLER")
+        self.data_source = data_source 
+        self.indices = list(range(len(self.data_source)))
+
+    def __iter__(self):
+
+
+        return iter(self.indices)
+
+
+
+    def __len__(self):
+        return len(self.data_source)
+
+
+
+
+
+
+   

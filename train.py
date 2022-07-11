@@ -108,7 +108,14 @@ def main():
             seed=cfg.seed) for ds in datasets_val
     ]
 
-    
+    #batch = next(iter(data_loaders))
+    #print(batch)
+
+    #for i, data in enumerate(data_loaders[0]):
+    #    print(data)
+
+
+
 
 
     optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.5, momentum=0.9)
@@ -119,7 +126,7 @@ def main():
 
     best_avg_loss_val = 9999
     epoch_number = 0
-    EPOCHS = 20
+    EPOCHS = 70
 
 
     for epoch in range(EPOCHS):
@@ -175,8 +182,9 @@ def main():
             best_avg_loss_val = avg_loss_val
             output_path = os.path.join(output_path,'model_predictor.pth')
             torch.save(model.predictor.state_dict(),output_path)
-
+    
 
 
 if __name__ == '__main__':
     main()
+

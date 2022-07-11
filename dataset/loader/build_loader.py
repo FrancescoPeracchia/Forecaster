@@ -7,7 +7,7 @@ from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
 
-from .sampler import CustomSampler
+from .sampler import CustomSampler,Kitti_Sampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -45,13 +45,13 @@ def build_dataloader(dataset,
         DataLoader: A PyTorch dataloader.
     """
     rank, world_size = get_dist_info()
-    batch_size = imgs_per_gpu*len(sequence)
+    batch_size = 1
     
-    num_workers = workers_per_gpu
+    num_workers = 1
     print('BATCH SIZE: ',batch_size)
     print('num_workers : ',num_workers)
     print('sample ann_file',dataset.ann_file)
-    sampler = CustomSampler(dataset,sequence)
+    sampler = Kitti_Sampler(dataset,sequence)
 
 
     init_fn = partial(
