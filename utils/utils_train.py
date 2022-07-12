@@ -122,7 +122,7 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     """
     Args: cfg model, data_loaders, optimizer
 
-    Return: average_loss, the  comulative loss 'loss' is processed by mean operation, 
+    Return: average_loss, the  comulative loss 'loss' 
     
             log_loss_dict, is a dicitonary where for each prectiond is stored the related resolution loss, mean is NOT yet computed over
             all the predictions 
@@ -143,7 +143,8 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
     for i, data in enumerate(data_loaders[0]):
 
-        
+        #condition if the frame is missing
+        #i.e first frame of a clip doesn't have previous frames for the past
         if data['ids'] == 0 :
             #print('skipped')
             for _ in range(data_loaders[0].batch_size):
@@ -154,17 +155,17 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
         # Zero your gradients for every batch!
         optimizer.zero_grad()
 
-        # Make predictions for this batch
-        losses = model(data,cfg.modality['target'])
-        
+   
 
         
+        losses = model(data,cfg.modality['target'])
+        
+        
         loss,log_vars = parse_loss(losses)
+        #print(log_vars)
         
         #loss is the sum of all the individual losses 
         #log_vars is Ordered Dictionary
-        
-
         for log_var in log_vars:
             log = log_vars[log_var]
             log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)

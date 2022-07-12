@@ -51,7 +51,7 @@ def build_dataloader(dataset,
     print('BATCH SIZE: ',batch_size)
     print('num_workers : ',num_workers)
     print('sample ann_file',dataset.ann_file)
-    sampler = Kitti_Sampler(dataset,sequence)
+    sampler = Kitti_Sampler(dataset)
 
 
     init_fn = partial(

@@ -107,7 +107,7 @@ class Forecaster(BaseForecaster):
         model.eval()
         return model    
 
-    def extract_ps(self,imgs):
+    def extract_ps(self,imgs,list_id):
         
         """Initialize a detector from config file.
 
@@ -118,12 +118,13 @@ class Forecaster(BaseForecaster):
              output (Dictionary) : Dictionary contains different keys for each feature resolution, in each resolution is stored a list with all image features for that resolution
 
         """
-          
+
+
  
         with torch.no_grad():
             
             #from PS code
-            image_features = self.efficientps.extract_feats(imgs)
+            image_features = self.efficientps.extract_feats(imgs,list_id)
             #is a generator gives in output a tuple with 4 features resolutions
 
             #feature_list = self.features_list.copy()
@@ -133,7 +134,9 @@ class Forecaster(BaseForecaster):
             
             
             #call the extraction for all the loades imgs, note above is a generator
-            for result in image_features:
+            for result,id in image_features:
+                #print('result',len(result))
+                #print('id',id)
 
               
 
@@ -194,6 +197,7 @@ class Forecaster(BaseForecaster):
             output (Dictionary) : Cointaining two key "Predicted" "GT", but keys referr to a list of same lenght with the heads output generated for but GT and Predicted Features
          
         """
+  
 
         output = self.ps_output.copy()
         #print(len(targets))
@@ -229,12 +233,14 @@ class Forecaster(BaseForecaster):
     def forward_train(self,list_image,list_id, targets):
         #imgs is a list of tensors with shape
         #[(hight,width,channels).....]
-        #print(type(list_image))
-        #print(len(list_image))
+       
         
-        features_dict = self.extract_ps(list_image)
+        
+        features_dict = self.extract_ps(list_image,list_id)
         #print('dept',len(features_list['low']))
+
         losses = self.predictor(features_dict, targets, return_loss=True)
+
 
         return losses
     

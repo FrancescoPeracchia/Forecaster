@@ -120,7 +120,7 @@ def main():
 
     optimizer = torch.optim.SGD(model.predictor.parameters(), lr=0.5, momentum=0.9)
     scheduler0 = ExponentialLR(optimizer, gamma=0.9)
-    scheduler1 = MultiStepLR(optimizer, milestones=[1,2], gamma=3)
+    scheduler1 = MultiStepLR(optimizer, milestones=[10,25,45], gamma=3)
 
 
 

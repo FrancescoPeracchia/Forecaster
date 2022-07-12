@@ -377,7 +377,7 @@ class Kitti_Sampler(Sampler):
 
     
 
-    def __init__(self, data_source,sequence):
+    def __init__(self, data_source):
 
         print("FORECASTING SAMPLER")
         self.data_source = data_source 

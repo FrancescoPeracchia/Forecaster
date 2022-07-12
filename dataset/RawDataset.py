@@ -1,7 +1,4 @@
 
-from email.mime import image
-from operator import index
-from time import process_time_ns
 from torch.utils.data import Dataset
 import json
 import numpy as np
@@ -27,15 +24,29 @@ class RawDataset(Dataset):
     def __init__(self,
                 ann_file,
                 pipeline,
-                data_root=None,
-                test_mode=False):
+                data_root,
+                target = None,
+                test_mode = False,):
+
+ 
 
         self.ann_file = ann_file
         self.data_root = data_root
         self.pipeline = pipeline
+        self.frame_sequence = target.frame_sequence
         self.test_mode = test_mode
+        mgs = '-'*50
+        print(mgs)
         print('load annotation',self.ann_file)
         print('load data_root',self.data_root)
+        print('pipeline',self.pipeline)
+        print('target',self.frame_sequence)
+        print('test_mode',self.test_mode)
+        mgs = '-'*50
+
+        self.NoneType = None
+        
+        
 
 
         self.img_infos = self.load_annotations(self.ann_file)
@@ -77,10 +88,21 @@ class RawDataset(Dataset):
 
     def __getitem__(self, idx):
             data=dict()
+
             
         
             #print(self.img_infos[idx])
             images_indeces = self.img_infos[idx]['list_images']
+            #if another sequence is given in the config file a new sequence is computed
+            #respect to the one created in pre-processing
+            if self.frame_sequence is not None:
+              
+                if images_indeces is not self.NoneType :
+                    current_time = images_indeces[2]
+                    images_indeces = [current_time + t for t in self.frame_sequence]
+
+            #print(images_indeces) 
+
             images = []
             ids = []
            
@@ -97,7 +119,6 @@ class RawDataset(Dataset):
 
                     #print(index)
                     image = self.prepare_train_img(index)['img']
-                    print(len(image))
                     images.append(image)
                     ids.append(index)
 

@@ -3,7 +3,7 @@ modality dict
 '''
 
 
-modality = dict(  frame_sequence = [-5, -3, 0, 3, 4, 5],
+modality = dict(  frame_sequence = [-4, -2, 0, 2, 4, 5],
                 target = [1,2,3]
 
 )
@@ -83,17 +83,20 @@ data = dict(
         type=dataset_type,
         ann_file ='/data/KITTI/train.json',
         data_root = '/data/KITTI/training',
-        pipeline=train_pipeline),
+        pipeline=train_pipeline,
+        target = modality),
     validation=dict(
         type=dataset_type,
         ann_file ='/data/KITTI/validation.json',
         data_root = '/data/KITTI/validation',
-        pipeline=train_pipeline),
+        pipeline=train_pipeline,
+        target = modality),
     test=dict(
         type=dataset_type,
         ann_file ='/data/KITTI/test.json',
         data_root = '/data/KITTI/test',
-        pipeline=train_pipeline))
+        pipeline=train_pipeline,
+        target = modality))
 
     
 evaluation = dict(interval=1, metric=['panoptic'])

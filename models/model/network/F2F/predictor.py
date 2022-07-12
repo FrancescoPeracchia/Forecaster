@@ -65,17 +65,21 @@ class F2F(BasePredictor):
         #print(past['medium'].shape)
         #print(past['high'].shape)
         #print(past['huge'].shape)
+        l_shape = past['low'].shape
+        m_shape = past['medium'].shape
+        b_shape = past['high'].shape
+        h_shape = past['huge'].shape
         losses = {}
 
 
-        low = torch.reshape(past['low'],(256,3,256,512))
+        low = torch.reshape(past['low'],(256,3,l_shape[1],l_shape[2]))
         #print(low[0,0,:,:])
         #print(past['low'].shape)
-        medium = torch.reshape(past['medium'],(256,3,128,256))
+        medium = torch.reshape(past['medium'],(256,3,m_shape[1],m_shape[2]))
         #print(past['low'].shape)
-        high = torch.reshape(past['high'],(256,3,64,128))
+        high = torch.reshape(past['high'],(256,3,b_shape[1],b_shape[2]))
         #print(past['low'].shape)
-        huge = torch.reshape(past['huge'],(256,3,32,64))
+        huge = torch.reshape(past['huge'],(256,3,h_shape[1],h_shape[2]))
 
         #Network
         low_pre = self.f2f_low(low)

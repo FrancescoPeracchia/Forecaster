@@ -102,12 +102,13 @@ class EfficientPS(BaseDetector):
         self.mask_roi_extractor.init_weights()
         self.semantic_head.init_weights() 
 
-    def extract_feat(self, img):
+    def extract_feat(self, img,index):
         """Directly extract features from the backbone+neck
         """
         x = self.backbone(img)
         x = self.neck(x)
-        return x
+
+        return x,index
 
     def forward_dummy(self, img): #leave it for now
         """Used for computing network flops.

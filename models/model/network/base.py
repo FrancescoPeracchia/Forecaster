@@ -56,12 +56,10 @@ class BaseForecaster(nn.Module, metaclass=ABCMeta):
             image = torch.transpose(image, 1, 2)
             #print('shape',image.shape)
             im = torch.unsqueeze(image, 0).float().to(self.device)
+            #print(im.shape)
             list_image.append(im)
-     
-        #print('ids',ids)
 
-        
-
+   
 
         if return_loss:
             return self.forward_train(list_image,ids, targets, **kwargs)
