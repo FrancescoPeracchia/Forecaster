@@ -3,7 +3,7 @@ modality dict
 '''
 
 
-modality = dict(  frame_sequence = [-4, -2, 0, 2, 4, 5],
+modality = dict(  frame_sequence = [-4, -2, 0, 3, 4, 5],
                 target = [1,2,3]
 
 )

@@ -80,7 +80,9 @@ def main():
 
     cfg.data.validation['data_root'] = str(directory+cfg.data.validation['data_root'])
     print('data_root path :', cfg.data.validation['data_root'])
+    
 
+    output_path = os.path.join(output_path,'model_predictor.pth')
 
     #lists of datesets
     datasets = [build_dataset(cfg.data.train)]
@@ -127,35 +129,36 @@ def main():
     best_avg_loss_val = 9999
     epoch_number = 0
     EPOCHS = 70
-
+    skip = True
 
     for epoch in range(EPOCHS):
-        print('EPOCH {}:'.format(epoch_number + 1))
 
-        #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
-        #it ll generatate a model with efficientPS parts for training activated
-        model.predictor.train()
-        avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
-        print('avg_loss',avg_loss)
+        if skip :
+            print('EPOCH {}:'.format(epoch_number + 1))
+
+            #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
+            #it ll generatate a model with efficientPS parts for training activated
+            model.predictor.train()
+            avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
+            print('avg_loss',avg_loss)
 
 
     
 
+            #TENSORBOARD GRAPH TRAIN
+            for log in loss_dict:
+                mean = np.mean(loss_dict[log])
+                t= os.path.join('Loss',str(log))
+                writer.add_scalar(t,mean,epoch)
         
 
 
-        #TENSORBOARD GRAPH VAL
-        for log in loss_dict:
-            mean = np.mean(loss_dict[log])
-            t= os.path.join('Loss',str(log))
-            writer.add_scalar(t,mean,epoch)
-        
 
+
+        #SCHEDULER & TENSORBOARD GRAPH LR
         lr = get_lr(optimizer)
         scheduler0.step()
         scheduler1.step()
-
-        #TENSORBOARD GRAPH VAL
         writer.add_scalar('learning rate',lr,epoch)
         
         
@@ -180,7 +183,6 @@ def main():
 
         if avg_loss_val < best_avg_loss_val:
             best_avg_loss_val = avg_loss_val
-            output_path = os.path.join(output_path,'model_predictor.pth')
             torch.save(model.predictor.state_dict(),output_path)
     
 
