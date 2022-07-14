@@ -1,7 +1,7 @@
 from collections import OrderedDict
 import torch
 import numpy as np
-from PS.mmdet.datasets.pipelines import Compose
+from models.PS.mmdet.datasets.pipelines import Compose
 from mmcv.parallel import collate, scatter
 import mmcv
 

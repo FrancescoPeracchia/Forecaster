@@ -4,7 +4,7 @@ import os
 from .utils_train import inference_detector
 import numpy as np
 from PIL import Image
-from PS.mmdet.datasets.cityscapes import PALETTE
+from models.PS.mmdet.datasets.cityscapes import PALETTE
 import numpy as np
 from skimage.morphology import dilation
 from skimage.segmentation import find_boundaries

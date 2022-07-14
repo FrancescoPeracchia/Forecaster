@@ -4,10 +4,10 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
 from mmcv import Config
-from PS.mmdet import __version__
+from models.PS.mmdet import __version__
 from dataset import build_dataset,build_dataloader
 from models.model import build_forecaster
-from PS.mmdet.apis import set_random_seed
+from models.PS.mmdet.apis import set_random_seed
 from datetime import datetime
 from utils.utils_train import train_one_epoch, validation, get_lr
 import numpy as np
