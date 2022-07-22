@@ -65,6 +65,7 @@ class F2F(BasePredictor):
         #print(past['medium'].shape)
         #print(past['high'].shape)
         #print(past['huge'].shape)
+        
         l_shape = past['low'].shape
         m_shape = past['medium'].shape
         b_shape = past['high'].shape

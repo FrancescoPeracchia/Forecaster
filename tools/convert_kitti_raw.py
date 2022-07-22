@@ -9,24 +9,32 @@ from time import process_time_ns
 import cv2
 import json
 import shutil
+import mmcv
 
 parser = argparse.ArgumentParser(description="Convert KITTI to coco format")
 parser.add_argument("root_dir", metavar="ROOT_DIR", type=str, help="Root directory to clip's folders ")
 parser.add_argument("out_dir", metavar="OUT_DIR", type=str, help="Output directory")
 parser.add_argument('--resize', type=bool, default=True, help='if images should be resized by CV2')
-parser.add_argument('--percentage', nargs='+', type=float, default=(0.8,0.1,0.1), help='tuple percentage to divide (train,validation,test)')
+parser.add_argument('--percentage', nargs='+', type=float, default=(0.8,0.1,0.1), help='tuple percentage to  (train,validation,test)')
 
 def main(args):
+    mgs = 80*'-'
+    print(mgs)
     print("Loading KITTI RAW from", args.root_dir)
+    
 
     RESIZE = args.resize
     PERCENTAGE = tuple(args.percentage)
+
+    sum = PERCENTAGE[0] + PERCENTAGE[1] + PERCENTAGE[2]
+    assert sum == 1 , 'splitting rate sum it should be 1 ' 
     
 
 
     _ensure_dir(args.out_dir)
 
     #previous folder are deleted and recreated
+    print(mgs)
     print('Delete previous training data')
     training_path = path.join(args.out_dir, "training")
     shutil.rmtree(training_path)
@@ -51,10 +59,12 @@ def main(args):
     training_len = int(num_folders*PERCENTAGE[0]) 
     validation_len = int(num_folders*PERCENTAGE[1])
     testing_len = int(num_folders*PERCENTAGE[2])
-
-    print(training_len) 
-    print(validation_len) 
-    print(testing_len) 
+    print(mgs)
+    print('CLIP for :')
+    print('Training',training_len) 
+    print('Validation',validation_len) 
+    print('Test',testing_len) 
+    print(mgs)
 
     #path json files
     json_train = path.join(args.out_dir,'train.json')
@@ -65,11 +75,12 @@ def main(args):
     
 
     with open(json_train, 'w') as f:
-        print("The train file is created")
+        print("The train file is created : ", json_train)
         with open(json_validation, 'w') as v:
-            print("The validation file is created")
+            print("The validation file is created : ", json_validation)
             with open(json_test, 'w') as t:
-                print("The test file is created")
+                print("The test file is created : ",json_test)
+                print(mgs)
 
                 names =[]   
                 id_list = [] 
@@ -79,19 +90,21 @@ def main(args):
                     
                 id = 0    
                 counter = 0
+                print('Processing....')
+                prog_bar = mmcv.ProgressBar(num_folders)
 
                 for folder in get_immediate_subdirectories(folder_root):
-                    print('processed folder ',processed, '/',num_folders )
+                    #print('processed folder ',processed, '/',num_folders )
 
                     if processed < training_len :
                         destination_path = training_path
-                    elif processed >= training_len and processed < training_len+training_len :
+                    elif processed >= training_len and processed < training_len+validation_len :
                         destination_path = validation_path
-                    elif processed >= training_len+training_len :
+                    elif processed >= training_len+validation_len :
                         destination_path = test_path
 
                     processed +=1
-                    print('PATH',destination_path)
+                    #print('PATH',destination_path)
 
     
                         
@@ -117,12 +130,14 @@ def main(args):
                     relative_id_list.extend(list_target)
                     all_list_destination_path.extend(list_destination_path)
                     names.extend(list_)
+
+                    prog_bar.update()
                         
                         
                     
-                print('names',names)
-                print('id_list',id_list)
-                print('lunghezza dataset',len(last))
+                #print('names',names)
+                #print('id_list',id_list)
+                #print('lunghezza dataset',len(last))
 
                 data_train = []
                 data_val = []
@@ -145,11 +160,12 @@ def main(args):
                     
 
                     if path_des == training_path :
+                   
                         image_data = {'id': id, 'filename': name,'end_frame':end}
                         if list_images is not None :
                             temp_list = [0,0,0,0,0,0] 
-                            for i,t in enumerate(target):
-                                temp_list[i] = id+t
+                            for i,temp in enumerate(target):
+                                temp_list[i] = id+temp
                             list_images = temp_list
                         instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_train.append(instance)
@@ -159,8 +175,8 @@ def main(args):
                         image_data = {'id': id-last_id_train, 'filename': name,'end_frame':end} 
                         if list_images is not None :
                             temp_list = [0,0,0,0,0,0]  
-                            for i,t in enumerate(target):
-                                temp_list[i] = id-last_id_train+t 
+                            for i,temp in enumerate(target):
+                                temp_list[i] = id-last_id_train+temp 
                             list_images = temp_list
                         instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_val.append(instance)
@@ -170,42 +186,42 @@ def main(args):
                         image_data = {'id': id-last_id_test, 'filename': name,'end_frame':end}
                         if list_images is not None :
                             temp_list = [0,0,0,0,0,0]
-                            for i,t in enumerate(target):
-                                temp_list[i] = id-last_id_test+t 
+                            for i,temp in enumerate(target):
+                                temp_list[i] = id-last_id_test+temp 
                             list_images = temp_list
                         instance = {'img_info': image_data,'img_prefix':path_des,'list_images':list_images}
                         data_test.append(instance) 
 
                     else :           
-                        print('not right path')         
+                        pass         
                     
 
                 len_data_train = len(data_train)
                 len_data_val = len(data_val)
                 len_data_test = len(data_test)
-                print('data leng test',len_data_test)
                 json.dump(data_train,f,indent=2)
                 json.dump(data_val,v,indent=2)
                 json.dump(data_test,t,indent=2)
     
     if RESIZE :
-        count_train = 0 
+        print('\nResizing Train set...\n')
+        prog_bar = mmcv.ProgressBar(len_data_train)
         for name in os.listdir(training_path):
-            print('Resizing TRAIN',count_train,'/',len_data_train-1)
             resize(training_path,name,(2048,1024))
-            count_train +=1
+            prog_bar.update()
+            
         
-        count_validation = 0
+        print('\nResizing Validation set...\n')
+        prog_bar = mmcv.ProgressBar(len_data_val)
         for name in os.listdir(validation_path):
-            print('Resizing VALIDATION',count_validation,'/',len_data_val-1)
             resize(validation_path,name,(2048,1024))
-            count_validation +=1
+            prog_bar.update()
 
-        count_test = 0
+        print('\nResizing Test set...\n')
+        prog_bar = mmcv.ProgressBar(len_data_test)
         for name in os.listdir(test_path):
-            print('Resizing ',count_test,'/',len_data_test-1)
             resize(test_path,name,(2048,1024))
-            count_test +=1
+            prog_bar.update()
 
            
     
@@ -266,9 +282,9 @@ def get_previus_past_images_id(relative_ids,target):
     for relative_id in relative_ids :
         first =  relative_id + inferior_limit
         last =  relative_id + superior_limit
-        print('relative',relative_id)
-        print('first',first)
-        print('last',last)
+        #print('relative',relative_id)
+        #print('first',first)
+        #print('last',last)
        
 
         if first >= 0 and last <= len (relative_ids):

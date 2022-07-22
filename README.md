@@ -16,11 +16,10 @@ F2F
 |   └── RAW
 ├── dataset
 ├── inference
-├── model
-├── PS
+├── models
 ├── runs
 └── tools
-├── PS
+
 ```
   
   ##### Download Raw Kitti
@@ -37,11 +36,12 @@ F2F
 ├── data
 |   ├── KITTI   
 |   └── RAW
-|        └── processed
+|        ├── processed
+|        └── zip
+|
 ├── dataset
 ├── inference
-├── model
-├── PS
+├── models
 ├── runs
 └── tools
 ```
@@ -49,10 +49,20 @@ F2F
 
   ##### Extract images
   
+    e.g: "zip" should be populated with the zip folders, keep a new folder "processed" for clips wanted to be processed
+
+
+    percentage : splitting rate TRAIN VALIDATION TEST
+
+
+
+  
+
 
 ```bash
 python tools/convert_kitti_raw.py download-folder dataset-folder --resize False --percentage 0.7 0.2 0.1
 ```
+
 
 ```
 F2F
@@ -69,10 +79,10 @@ F2F
 |   | 
 |   └── RAW
 |        └── processed
+|        └── zip
 ├── dataset
 ├── inference
-├── model
-├── PS
+├── models
 ├── runs
 └── tools
 ```
@@ -107,8 +117,7 @@ F2F
 |        └── processed
 ├── dataset
 ├── inference
-├── model
-├── PS
+├── models
 ├── runs
 └── tools
 ```
@@ -146,3 +155,8 @@ F2F
 
 </details>
 
+
+
+conda init bash
+source ~/.bashrc
+tmux kill-session -t ostechnix(numeber)

@@ -2,7 +2,7 @@
 from torch.utils.data import Dataset
 import json
 import numpy as np
-from PS.mmdet.datasets.pipelines import Compose
+from models.PS.mmdet.datasets.pipelines import Compose
 import mmcv
 
 class LoadImage(object):

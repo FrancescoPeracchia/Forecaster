@@ -54,8 +54,8 @@ def main(args):
                 zip_ref.extractall(zip_out_path)
                 os.remove(path_zip[:-1])
             
-
-            delete_folder(name_folder_to_delete[:-1],'image_03')
+            to_keep = ['image_03','oxts']
+            delete_folder(name_folder_to_delete[:-1],to_keep)
 
 
             move_rename(name_folder_to_delete[:-1],new_name[:-1])
@@ -74,7 +74,7 @@ def delete_folder(path,keep):
     list_=get_immediate_subdirectories(path)
 
     for subfolder in list_:
-        if subfolder==keep:
+        if subfolder in keep:
             pass
         else:
             path_remove = os.path.join(path,subfolder)
