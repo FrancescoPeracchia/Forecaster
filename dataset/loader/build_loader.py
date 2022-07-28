@@ -1,3 +1,4 @@
+from pickle import FALSE
 import platform
 import random
 from functools import partial
@@ -7,7 +8,7 @@ from mmcv.parallel import collate
 from mmcv.runner import get_dist_info
 from torch.utils.data import DataLoader
 
-from .sampler import CustomSampler,Kitti_Sampler
+from .sampler import CustomSampler,Kitti_Sampler,Kitti_DistSampler
 
 if platform.system() != 'Windows':
     # https://github.com/pytorch/pytorch/issues/973
@@ -22,6 +23,9 @@ def build_dataloader(dataset,
                      sequence,
                      imgs_per_gpu,
                      workers_per_gpu,
+                     dist = False,
+                     world_size = 1,
+                     rank = None,
                      seed=None,
                      **kwargs):
     """Build PyTorch DataLoader.
@@ -44,19 +48,19 @@ def build_dataloader(dataset,
     Returns:
         DataLoader: A PyTorch dataloader.
     """
-    rank, world_size = get_dist_info()
+    
     batch_size = 1
     
     num_workers = 1
     print('BATCH SIZE: ',batch_size)
     print('num_workers : ',num_workers)
     print('sample ann_file',dataset.ann_file)
-    sampler = Kitti_Sampler(dataset)
+    if dist :
 
+        sampler = Kitti_DistSampler(dataset,rank,world_size)
+    else:
+        sampler = Kitti_Sampler(dataset)
 
-    init_fn = partial(
-        worker_init_fn, num_workers=num_workers, rank=rank,
-        seed=seed) if seed is not None else None
 
     data_loader = DataLoader(
         dataset,

@@ -41,9 +41,11 @@ class BasePredictor(nn.Module, metaclass=ABCMeta):
     
     def forward(self, input, targets, return_loss=True):
         
-        past,future = self.concatenate_by_depth(input,targets)
+        #past,future = self.concatenate_by_depth(input,targets)
+        past, future = self.ConvLSTM_data_preparation(input,targets)
         #print(type(past['low']))
         #print(type(future['low']))
+        
         
 
         
@@ -80,21 +82,62 @@ class BasePredictor(nn.Module, metaclass=ABCMeta):
             
             #read from image 1 the depth dimetions [N,D,H,W]
             depth = features[0].shape[1]
-            #print('depth',depth)
-            
+
             feature,future = stack(features,depth,lengt)
-            #each feature has shape
-            #torch.Size([768, 256, 512]),
-            #torch.Size([768, 128, 256]),
-            #torch.Size([768, 64, 128]),
-            #torch.Size([768, 32, 64])
             input_features_INPUT[str(self.list_key[str(feature_level)])] = feature
             input_features_FUTURE[str(self.list_key[str(feature_level)])] = future 
 
 
 
-    
+
         return input_features_INPUT,input_features_FUTURE
+  
+    def ConvLSTM_data_preparation(self,input,target):
+        """
+        Args :input is a Dictionary where each element is list of features for each images
+        [D,W,H]....each image
+
+
+        Return : List composed by different resolution levels
+        input1 = Variable(torch.randn(1,3, 256, 16, 32))
+        input2 = Variable(torch.randn(1,3, 256, 32, 64))
+        input3 = Variable(torch.randn(1,3, 256, 64, 128))
+        input4 = Variable(torch.randn(1,3, 256, 128, 256))
+        input = [input1,input2,input3,input4]
+        """
+        past = []
+        future = []
+        for feature_level in range(len(input)):
+
+            
+            #is a list of 6 element each with a tensor torch.Size([1, 256, 128, 256])
+            features = input[str(self.list_key[str(feature_level)])]
+            
+           
+            list_level_past = []
+            list_level_fut = []
+             # access each tensor
+            for i,f in enumerate(features):
+                if i < 3:
+                    list_level_past.append(f)
+                else :
+                    list_level_fut.append(f)
+
+
+            list_level_past = torch.stack(list_level_past, 1)
+            list_level_fut = torch.stack(list_level_fut, 1)
+            
+            past.append(list_level_past)
+            future.append(list_level_fut)
+        
+        
+
+        
+
+ 
+
+    
+        return past,future
     
 
     

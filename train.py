@@ -4,12 +4,13 @@ import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
 import torch
 from mmcv import Config
-from models.PS.mmdet import __version__
+from PS.mmdet import __version__
 from dataset import build_dataset,build_dataloader
 from models.model import build_forecaster
-from models.PS.mmdet.apis import set_random_seed
+from PS.mmdet.apis import set_random_seed
 from datetime import datetime
 from utils.utils_train import train_one_epoch, validation, get_lr
+from utils.utils  import test_one_batch
 import numpy as np
 import os
 from torchsummary import summary
@@ -25,6 +26,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
     parser.add_argument('config', help='train config file path')
     parser.add_argument('output', help='output path for saving the model')
+    parser.add_argument('--modality', type=bool, default=True, help='Are available only two modalities True = "Training"\
+    \ and "Model Test", the last one is executing only one batch to test the model')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
    
 
@@ -41,6 +44,7 @@ def main():
     args = parse_args()
 
     output_path = args.output
+    model_testing = args.modality
 
 
     cfg = Config.fromfile(args.config)
@@ -59,7 +63,7 @@ def main():
     
 
     model = build_forecaster(
-        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg)
+        cfg.model, train_cfg=cfg.train_cfg, test_cfg=cfg.test_cfg, device = 'cuda:0')
     
 
     summary(model)
@@ -129,64 +133,70 @@ def main():
     best_avg_loss_val = 9999
     epoch_number = 0
     EPOCHS = 70
-    skip = True
+    skip = False
 
-    for epoch in range(EPOCHS):
-
-        if skip :
-            print('EPOCH {}:'.format(epoch_number + 1))
-
-            #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
-            #it ll generatate a model with efficientPS parts for training activated
-            model.predictor.train()
-            avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
-            print('avg_loss',avg_loss)
-
-
+    if model_testing != True  :
+        model.predictor.train()
+        avg_loss,loss_dict = test_one_batch(cfg, model, data_loaders, optimizer)
+        print('avg_loss',avg_loss)
     
+    else :
 
-            #TENSORBOARD GRAPH TRAIN
-            for log in loss_dict:
-                mean = np.mean(loss_dict[log])
-                t= os.path.join('Loss',str(log))
-                writer.add_scalar(t,mean,epoch)
+        for epoch in range(EPOCHS):
+
+            if skip != True :
+                print('EPOCH {}:'.format(epoch_number + 1))
+
+                #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
+                #it ll generatate a model with efficientPS parts for training activated
+                model.predictor.train()
+                avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
+                print('avg_loss',avg_loss)
+
+
         
 
+                #TENSORBOARD GRAPH TRAIN
+                for log in loss_dict:
+                    mean = np.mean(loss_dict[log])
+                    t= os.path.join('Loss',str(log))
+                    writer.add_scalar(t,mean,epoch)
+            
 
 
 
-        #SCHEDULER & TENSORBOARD GRAPH LR
-        lr = get_lr(optimizer)
-        scheduler0.step()
-        scheduler1.step()
-        writer.add_scalar('learning rate',lr,epoch)
-        
-        
 
-        model.eval()
-        #note model.efficientps is already at eval() you could even use model.predictor.eval()
-        with torch.no_grad():
-            print('VALIDATION ')
-            avg_loss_val,loss_dict_val = validation(cfg,model,data_loaders_val)
-            print('avg_loss_val',avg_loss_val)
+            #SCHEDULER & TENSORBOARD GRAPH LR
+            lr = get_lr(optimizer)
+            scheduler0.step()
+            scheduler1.step()
+            writer.add_scalar('learning rate',lr,epoch)
+            
+            
 
-            #TENSORBOARD GRAPH VAL
-            for log in loss_dict_val:
-                mean = np.mean(loss_dict_val[log])
-                t= os.path.join('Loss_validation',str(log))
-                writer.add_scalar(t,mean,epoch)
-        
-                
+            model.eval()
+            #note model.efficientps is already at eval() you could even use model.predictor.eval()
+            with torch.no_grad():
+                print('VALIDATION ')
+                avg_loss_val,loss_dict_val = validation(cfg,model,data_loaders_val)
+                print('avg_loss_val',avg_loss_val)
+
+                #TENSORBOARD GRAPH VAL
+                for log in loss_dict_val:
+                    mean = np.mean(loss_dict_val[log])
+                    t= os.path.join('Loss_validation',str(log))
+                    writer.add_scalar(t,mean,epoch)
+            
+                    
 
 
-        epoch_number += 1
+            epoch_number += 1
 
-        if avg_loss_val < best_avg_loss_val:
-            best_avg_loss_val = avg_loss_val
-            torch.save(model.predictor.state_dict(),output_path)
+            if avg_loss_val < best_avg_loss_val:
+                best_avg_loss_val = avg_loss_val
+                torch.save(model.predictor.state_dict(),output_path)
     
 
 
 if __name__ == '__main__':
     main()
-

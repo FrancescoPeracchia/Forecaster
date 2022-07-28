@@ -3,12 +3,12 @@ from .base import BasePredictor
 import torch.nn as nn
 import torch
 
-class F2F(BasePredictor):
+class Conv3D(BasePredictor):
     def __init__(self,forecaster_cfg):
         super(BasePredictor, self).__init__()
         self.list_key = {'0':'low','1':'medium','2':'high','3':'huge'}
         self.inv_list_key = {'low':'0','medium':'1','high':'2','huge':'3'}
-        devices =['cuda:0','cuda:1']
+
         
         self.kernel_low = forecaster_cfg.low.kernel
         self.stride_low = forecaster_cfg.low.stride

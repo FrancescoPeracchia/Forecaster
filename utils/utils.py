@@ -87,7 +87,6 @@ def validation(cfg, model,data_loaders_val):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    print('lenght', len(data_loaders_val[0]))
     for i, data in enumerate(data_loaders_val[0]):
         if data['ids'] == 0 :
             for _ in range(data_loaders_val[0].batch_size):
@@ -112,15 +111,14 @@ def validation(cfg, model,data_loaders_val):
         #in the dataloader and then mean
         lasts_loss = np.append(last_loss,log)
 
-        for _ in range(data_loaders_val[0].batch_size):
+        for _ in range(len(log_loss_dict['low'])):
             prog_bar.update()
-            
     average_loss = np.mean(lasts_loss)
 
 
     return average_loss,log_loss_dict
 
-def train_one_epoch(cfg, model, data_loaders, optimizer):
+def test_one_batch(cfg, model, data_loaders, optimizer):
     """
     Args: cfg model, data_loaders, optimizer
 
@@ -137,66 +135,72 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     res_256 = np.array([])
     res_loss = np.array([])
     log_loss_dict = {'low':res_256,'medium':res_128,'high':res_64,'huge':res_32,'loss':res_loss}
+    
+    
+    
+    
+    EPOCHS = 20
+    average_loss_list = []
+
+    for epoch in range(EPOCHS):
+        iterator = iter(data_loaders[0])
+    
+        for i in range(10):
+            data = next(iterator)
+            #print(data)
 
 
-    # Here, we use enumerate(training_loader) instead of
-    # iter(training_loader) so that we can track the batch
-    # index and do some intra-epoch reporting
-    prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
-    for i, data in enumerate(data_loaders[0]):
-
-        #condition if the frame is missing
-        #i.e first frame of a clip doesn't have previous frames for the past
-        if data['ids'] == 0 :
+            if data['ids'] == 0 :
             #print('skipped')
-            for _ in range(data_loaders[0].batch_size):
-                prog_bar.update()
-            continue
+                
+                continue
+        
+
+            
+            # Zero your gradients for every batch!
+            optimizer.zero_grad()
+
+
+
+            
+            losses = model(data,cfg.modality['target'])
+            
+            
+            loss,log_vars = parse_loss(losses)
+            #print(log_vars)
+            
+            #loss is the sum of all the individual losses 
+            #log_vars is Ordered Dictionary
+            for log_var in log_vars:
+                log = log_vars[log_var]
+                log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)
+
+
+            # Compute the loss gradients
+            loss.backward()
+
+            # Adjust learning weights
+            optimizer.step()
             
 
-        # Zero your gradients for every batch!
-        optimizer.zero_grad()
-
-   
-        print(model.device)
-        
-        losses = model(data,cfg.modality['target'])
-        
-        
-        loss,log_vars = parse_loss(losses)
-        #print(log_vars)
-        
-        #loss is the sum of all the individual losses 
-        #log_vars is Ordered Dictionary
-        for log_var in log_vars:
-            log = log_vars[log_var]
-            log_loss_dict[log_var] = np.append(log_loss_dict[log_var],log)
+            #last processed log is 'loss' the one that we want to append for each prediction 
+            #in the dataloader and then mean
+            total_loss = loss.detach().clone()
+            total_loss = total_loss.to('cpu')
+            #print(total_loss)
+            lasts_loss = np.append(last_loss,total_loss)
+            
 
 
-        # Compute the loss gradients
-        loss.backward()
-
-        # Adjust learning weights
-        optimizer.step()
-        
-
-        #last processed log is 'loss' the one that we want to append for each prediction 
-        #in the dataloader and then mean
-        total_loss = loss.detach().clone()
-        total_loss = total_loss.to('cpu')
-        #print(total_loss)
-        lasts_loss = np.append(last_loss,total_loss)
-       
-        for _ in range(data_loaders[0].batch_size):
-            prog_bar.update()
+                
+            average_loss = np.mean(lasts_loss)
+            average_loss_list.append(average_loss)
 
         
-    average_loss = np.mean(lasts_loss)
-
-    
-
-
+        print('EPOCHS n.',epoch)
+        print(average_loss_list)
     return average_loss,log_loss_dict
+        
 
 
 

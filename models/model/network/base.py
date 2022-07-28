@@ -13,9 +13,9 @@ from mmdet.utils import print_log
 class BaseForecaster(nn.Module, metaclass=ABCMeta):
     """Base class for detectors"""
 
-    def __init__(self):
+    def __init__(self,device):
         super(BaseForecaster, self).__init__()
-        self.device = 'cuda:0'
+        self.device = device
         
     
 

@@ -1,3 +1,4 @@
+from ast import Raise
 from cmath import e
 from operator import gt
 from mmdet.core import get_classes
@@ -7,7 +8,8 @@ import torch
 import mmcv
 from mmdet.models import build_detector
 from .base import BaseForecaster
-from .F2F import F2F
+from .F2F import Conv3D
+from .F2F import MultiConvLSTM
 import copy
 import torch.nn as nn
 
@@ -20,10 +22,11 @@ class Forecaster(BaseForecaster):
                 forecaster_cfg,
                 train_cfg,
                 test_cfg,
-                eval
+                eval,
+                device
                 ):
   
-        super(Forecaster,self).__init__()
+        super(Forecaster,self,).__init__(device)
 
         self.pretrained = None
         self.training_with_p = False
@@ -44,8 +47,23 @@ class Forecaster(BaseForecaster):
         self.inv_list_key = {'low':'0','medium':'1','high':'2','huge':'3'}
         self.ps_output = dict(current=[],target=[],gt=[],time=[],index=[])
         self.head_input = dict(Predicted=[],GT=[])
+        print(forecaster_cfg.type)
+        
 
-        self.predictor = F2F(forecaster_cfg.model)
+
+        if forecaster_cfg.type == 'CONVLSTM':
+            print(forecaster_cfg.model)
+            
+
+            self.predictor = MultiConvLSTM(forecaster_cfg.model, self.device)
+        
+
+        elif forecaster_cfg.type == 'CONV3D':
+            self.predictor = Conv3D(forecaster_cfg.model)
+
+        else:
+
+            raise ValueError('CLASS not found, available classes are CONVLSTM,CONV3D')
         
 
         if eval :

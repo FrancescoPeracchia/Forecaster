@@ -371,23 +371,36 @@ class CustomSampler(Sampler):
 
 
 
-import gc
-
 class Kitti_Sampler(Sampler):
 
-    
-
     def __init__(self, data_source):
-
         print("FORECASTING SAMPLER")
         self.data_source = data_source 
         self.indices = list(range(len(self.data_source)))
 
     def __iter__(self):
-
-
         return iter(self.indices)
 
+
+
+    def __len__(self):
+        return len(self.data_source)
+
+
+
+
+
+class Kitti_DistSampler(Sampler):
+
+    
+    def __init__(self, data_source,rank,world_size):
+        print("FORECASTING SAMPLER")
+        self.data_source = data_source 
+        indices = list(range(len(self.data_source)))
+        self.indices = indices[rank:len(indices):world_size]
+
+    def __iter__(self):
+        return iter(self.indices)
 
 
     def __len__(self):
