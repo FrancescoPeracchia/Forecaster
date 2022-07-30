@@ -26,8 +26,9 @@ def main(args):
     RESIZE = args.resize
     PERCENTAGE = tuple(args.percentage)
 
-    sum = PERCENTAGE[0] + PERCENTAGE[1] + PERCENTAGE[2]
-    assert sum == 1 , 'splitting rate sum it should be 1 ' 
+    #sum = PERCENTAGE[0] + PERCENTAGE[1] + PERCENTAGE[2]
+    #print('Sum ',int(sum))
+    #assert int(sum) == 1 , 'splitting rate sum it should be 1 ' 
     
 
 

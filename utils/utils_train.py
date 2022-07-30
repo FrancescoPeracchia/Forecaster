@@ -120,7 +120,7 @@ def validation(cfg, model,data_loaders_val):
 
     return average_loss,log_loss_dict
 
-def train_one_epoch(cfg, model, data_loaders, optimizer):
+def train_one_epoch(cfg, model, data_loaders, optimizer, rank = None):
     """
     Args: cfg model, data_loaders, optimizer
 
@@ -130,6 +130,7 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
             all the predictions 
     
     """
+
     last_loss = np.array([])
     res_32 = np.array([])
     res_64 = np.array([])
@@ -142,27 +143,25 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
+    if rank == 0 or rank == None :
+        prog_bar = mmcv.ProgressBar(len(data_loaders[0].sampler.indices))
+
     for i, data in enumerate(data_loaders[0]):
 
         #condition if the frame is missing
         #i.e first frame of a clip doesn't have previous frames for the past
         if data['ids'] == 0 :
             #print('skipped')
-            for _ in range(data_loaders[0].batch_size):
-                prog_bar.update()
+            if rank == 0 or rank == None :
+                for _ in range(data_loaders[0].batch_size):
+                    prog_bar.update()
             continue
             
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
-
-   
-        print(model.device)
-        
+     
         losses = model(data,cfg.modality['target'])
-        
-        
         loss,log_vars = parse_loss(losses)
         #print(log_vars)
         
@@ -178,8 +177,8 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
 
         # Adjust learning weights
         optimizer.step()
-        
 
+    
         #last processed log is 'loss' the one that we want to append for each prediction 
         #in the dataloader and then mean
         total_loss = loss.detach().clone()
@@ -188,7 +187,8 @@ def train_one_epoch(cfg, model, data_loaders, optimizer):
         lasts_loss = np.append(last_loss,total_loss)
        
         for _ in range(data_loaders[0].batch_size):
-            prog_bar.update()
+            if rank == 0 or rank == None :
+                prog_bar.update()
 
         
     average_loss = np.mean(lasts_loss)

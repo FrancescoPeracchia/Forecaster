@@ -15,7 +15,7 @@ class BasePredictor(nn.Module, metaclass=ABCMeta):
 
     def __init__(self,forecaster_cfg):
         super(BasePredictor, self).__init__()
-        self.device = 'cuda:1'
+
         self.list_key = {'0':'low','1':'medium','2':'high','3':'huge'}
 
     

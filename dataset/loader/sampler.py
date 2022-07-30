@@ -377,6 +377,7 @@ class Kitti_Sampler(Sampler):
         print("FORECASTING SAMPLER")
         self.data_source = data_source 
         self.indices = list(range(len(self.data_source)))
+        #self.indices = indices[0:len(indices):2]
 
     def __iter__(self):
         return iter(self.indices)

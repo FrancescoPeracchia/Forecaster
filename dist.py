@@ -34,7 +34,7 @@ def parse_args():
 #DISTRIBUTED LUNCHER UTILS
 def setup(rank, world_size):
     # initialize the process group
-    dist.init_process_group("gloo", rank=rank, world_size=world_size)
+    dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
 def run_multiprocessing(multi_fn,args):
     mp.spawn(multi_fn,
@@ -126,15 +126,15 @@ def training_fn(rank, args):
 
     model.predictor.train()
     model.efficientps.eval()
-    model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank])
+    model_ddp = torch.nn.parallel.DistributedDataParallel(model, device_ids=[rank])
     
     if rank == 0 :
-        summary(model)
+        summary(model_ddp)
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         writer = SummaryWriter('runs/MODEL_1_TRAINING{}'.format(timestamp))
         output_path = os.path.join(output_path,'model_predictor.pth')
 
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.5, momentum=0.9)     
+    optimizer = torch.optim.SGD(model_ddp.parameters(), lr=0.5, momentum=0.9)     
     scheduler0 = ExponentialLR(optimizer, gamma=0.9)
     scheduler1 = MultiStepLR(optimizer, milestones=[10,25,45], gamma=3)
 
@@ -148,19 +148,24 @@ def training_fn(rank, args):
 
     if model_testing != True  :
         
-        avg_loss,loss_dict = test_one_batch(cfg, model, data_loaders, optimizer)
+        avg_loss,loss_dict = test_one_batch(cfg, model_ddp, data_loaders, optimizer)
         print('avg_loss',avg_loss,' rank :',rank)
     
     else :
 
         for epoch in range(EPOCHS):
+            
+            if rank == 0 :
+                print('EPOCH {}:'.format(epoch_number + 1))
+   
+            
 
             if skip != True :
-                print('EPOCH {}:'.format(epoch_number + 1))
-
+                
                 #YOU SHOULDN'T CALL model.train() model contains both efficientPS and Forecaster 
                 #it ll generatate a model with efficientPS parts for training activated
-                avg_loss,loss_dict = train_one_epoch(cfg, model, data_loaders, optimizer)
+                print('TRAINING EPOCS rank',rank)
+                avg_loss,loss_dict = train_one_epoch(cfg, model_ddp, data_loaders, optimizer,rank)
                
 
 
@@ -168,9 +173,11 @@ def training_fn(rank, args):
 
                 #TENSORBOARD GRAPH TRAIN
                 if rank == 0 :
-                    print('avg_loss',avg_loss,' rank :',rank)
+                    
+                    print('avg_loss : ',avg_loss,' rank :',rank)
                     for log in loss_dict:
                         mean = np.mean(loss_dict[log])
+                        print('loss_dict value ',mean)
                         t= os.path.join('Loss',str(log))
                         writer.add_scalar(t,mean,epoch)
             
@@ -180,18 +187,26 @@ def training_fn(rank, args):
 
             #SCHEDULER & TENSORBOARD GRAPH LR
             
-            lr = get_lr(optimizer)
+            
             scheduler0.step()
             scheduler1.step()
             epoch_number += 1
             if rank == 0 :
+                print('\nSaving model\n')
+                lr = get_lr(optimizer)
                 writer.add_scalar('learning rate',lr,epoch)
                 if avg_loss < best_avg_loss_val:
                     best_avg_loss_val = avg_loss
-                    torch.save(model.state_dict(),output_path)
+                    torch.save(model_ddp.state_dict(),output_path)
+            
+        cleanup()
+            
    
 
 def main():
+    #dist.destroy_process_group()
+    
+   
     args = parse_args()
 
     n_gpus = torch.cuda.device_count()
@@ -222,11 +237,12 @@ def main():
 
     #note: if only 1 node is available world_size = process_for_node
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
+    os.environ['MASTER_PORT'] = '12354'
 
     #Now, instead of running the train function once it'll be lunched multiple times on this node 
     #note: training_fn(i, args) receives : i, args as arguments, where i goes from 0 to args.gpus - 1. 
     run_multiprocessing(training_fn,args)
+    
 
 if __name__ == '__main__':
     main()

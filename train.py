@@ -28,6 +28,9 @@ def parse_args():
     parser.add_argument('output', help='output path for saving the model')
     parser.add_argument('--modality', type=bool, default=True, help='Are available only two modalities True = "Training"\
     \ and "Model Test", the last one is executing only one batch to test the model')
+    parser.add_argument('--PS', type=bool, default=True, help='to traing the depth')
+    parser.add_argument('--Depth', type=bool, default=False, help='to traing the depth')
+    parser.add_argument('-- Forecasting', type=bool, default=True, help='to traing only the forecasting')
     parser.add_argument('--seed', type=int, default=None, help='random seed')
    
 

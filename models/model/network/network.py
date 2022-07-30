@@ -8,10 +8,11 @@ import torch
 import mmcv
 from mmdet.models import build_detector
 from .base import BaseForecaster
-from .F2F import Conv3D
-from .F2F import MultiConvLSTM
+from .F2F import Conv3D, MultiConvLSTM
+from .depth import DepthEstimator as DD
 import copy
 import torch.nn as nn
+from .. import builder
 
 class Forecaster(BaseForecaster):
 
@@ -19,25 +20,89 @@ class Forecaster(BaseForecaster):
                 efficientPS_config,
                 efficientPS_checkpoint, 
                 multi_forecasting_modality,
-                forecaster_cfg,
+                efficientDEPTH_config,
+                efficientDEPTH_checkpoint,
+                forecaster_cfg_ps,
+                forecaster_cfg_depth,
                 train_cfg,
                 test_cfg,
-                eval,
-                device
+                eval_ps,
+                eval_depth,
+                device_ps,
+                device_depth,
+                train_ps,
+                train_depth
                 ):
   
-        super(Forecaster,self,).__init__(device)
+        super(Forecaster,self,).__init__(device_ps,device_depth)
 
         self.pretrained = None
         self.training_with_p = False
         self.modality = multi_forecasting_modality
-       
+
+        #initialize depth backbone with the same weights of the pre-trained ps
+        self.flag_initialize_depth_ps = True
+
+        #If initiliaze detectors in training or eval modality
+        self.train_ps = train_ps
+        self.train_depth = train_depth
+
+        #loaed pretrained forecaster and freeze it in evaluation mode
+        self.eval_ps_F = eval_ps
+        self.eval_depth_F = eval_depth
+
+
+        #PS Forecasting
+        #---------------------------------------------------------------------------------------------- 
+        #PS Decoders and Encoder pretrained
+        self.efficientps = self.init_ps_detector(efficientPS_config,efficientPS_checkpoint)
+        #PS Forecaster CONVLSTM or CONV3D
+        print('PS FORECASTER TYPE : ',forecaster_cfg_ps.type)
+        if forecaster_cfg_ps.type == 'CONVLSTM':
+            self.predictor_ps = MultiConvLSTM(forecaster_cfg_ps.model, self.device_ps)
+
+        elif forecaster_cfg_ps.type == 'CONV3D':
+            self.predictor_ps = Conv3D(forecaster_cfg_ps.model) 
         
+        else:
+            raise ValueError('PS FORECASTERCLASS not found, available classes are CONVLSTM,CONV3D')     
+        #----------------------------------------------------------------------------------------------
 
-        self.efficientps = self.init_detector(efficientPS_config,efficientPS_checkpoint,self.device)
-        self.freeze_ps()
+
+        #Depth Forecasting
+        #---------------------------------------------------------------------------------------------- 
+        #DEPTH Encoder is initialized as PS Encoder
+        if self.flag_initialize_depth_ps:
+            depth_backbone = copy.deepcopy(self.efficientps.backbone)
+            depth_neck = copy.deepcopy(self.efficientps.backbone)
+        
+        #should you delete variables depth_neck and depth_backbone ?
+        
+        #DEPTH Forecaster CONVLSTM or CONV3D
+        print('DEPTH FORECASTER TYPE : ',forecaster_cfg_depth.type)
+        if forecaster_cfg_depth.type == 'CONVLSTM':
+            self.predictor_depth = MultiConvLSTM(forecaster_cfg_depth.model, self.device_ps)
+    
+        elif forecaster_cfg_depth.type == 'CONV3D':
+            self.predictor_depth = Conv3D(forecaster_cfg_depth.model) 
+        
+        else:
+            raise ValueError('DEPTH FORECASTER CLASS not found, available classes are CONVLSTM,CONV3D')     
+       
+        #----------------------------------------------------------------------------------------------
+        #Freezing parts of PS ENCODER/DECODER and DEPTH ENCORER/DECODER
+        #used for training of both forecasting modules
+        if self.train_ps:
+            pass
+        else :
+            self.freeze_ps()
 
 
+        if self.train_depth:
+            pass
+        else :
+            self.freeze_depth()
+        #---------------------------------------------------------------------------------------------- 
 
         #self.feature_forecaster = builder.build_feature_forecaster(model_for)
         #self.forward_from_forecasting = True
@@ -47,35 +112,32 @@ class Forecaster(BaseForecaster):
         self.inv_list_key = {'low':'0','medium':'1','high':'2','huge':'3'}
         self.ps_output = dict(current=[],target=[],gt=[],time=[],index=[])
         self.head_input = dict(Predicted=[],GT=[])
-        print(forecaster_cfg.type)
         
-
-
-        if forecaster_cfg.type == 'CONVLSTM':
-            print(forecaster_cfg.model)
-            
-
-            self.predictor = MultiConvLSTM(forecaster_cfg.model, self.device)
         
-
-        elif forecaster_cfg.type == 'CONV3D':
-            self.predictor = Conv3D(forecaster_cfg.model)
-
-        else:
-
-            raise ValueError('CLASS not found, available classes are CONVLSTM,CONV3D')
-        
-
-        if eval :
-            PATH = forecaster_cfg.weights[0]
+        #FREEZE PS FORECASTING
+        if self.eval_ps_F :
+            PATH = self.forecaster_cfg_ps.weights[0]
             print('Loading pre-trained Forecaster...')
             print('Forecaster Model checkpoint at : ',PATH)
 
             checkpoint = torch.load(PATH)     
-            self.predictor.load_state_dict(checkpoint)
+            self.predictor_ps.load_state_dict(checkpoint)
             
-            self.predictor.eval()
-            self.freeze_forecaster()
+            self.predictor_ps.eval()
+            self.freeze_forecaster_ps()
+        
+
+        #FREEZE DEPTH FORECASTING
+        if self.eval_depth_F :
+            PATH = self.forecaster_cfg_depth.weights[0]
+            print('Loading pre-trained Forecaster...')
+            print('Forecaster Model checkpoint at : ',PATH)
+
+            checkpoint = torch.load(PATH)     
+            self.predictor_depth.load_state_dict(checkpoint)
+            
+            self.predictor_depth.eval()
+            self.freeze_forecaster_depth()
 
 
         #self.init_weights(pretrained=self.pretrained)
@@ -87,13 +149,22 @@ class Forecaster(BaseForecaster):
     def freeze_ps(self):
         for param in self.efficientps.parameters():
             param.requires_grad = False
+    
+    def freeze_depth(self):
+        for param in self.efficientdepth.parameters():
+            param.requires_grad = False
 
-    def freeze_forecaster(self):
-        for param in self.predictor.parameters():
+    def freeze_forecaster_ps(self):
+        for param in self.predictor_ps.parameters():
+            param.requires_grad = False
+    
+    def freeze_forecaster_depth(self):
+        for param in self.predictor_depth.parameters():
             param.requires_grad = False
 
 
-    def init_detector(self, config, checkpoint=None, device='cuda:0'):
+
+    def init_ps_detector(self, config, checkpoint=None):
         """Initialize a detector from config file.
 
         Args:
@@ -121,8 +192,12 @@ class Forecaster(BaseForecaster):
                             'meta data, use COCO classes by default.')
                 model.CLASSES = get_classes('coco')
         model.cfg = config  # save the config in the model for convenience
-        model.to(device)
-        model.eval()
+        model.to(self.device_ps)
+
+        if self.train_ps :
+            model.train()
+        else :
+            model.eval()
         return model    
 
     def extract_ps(self,imgs,list_id):
@@ -136,7 +211,6 @@ class Forecaster(BaseForecaster):
              output (Dictionary) : Dictionary contains different keys for each feature resolution, in each resolution is stored a list with all image features for that resolution
 
         """
-
 
  
         with torch.no_grad():
@@ -164,7 +238,6 @@ class Forecaster(BaseForecaster):
                     output[keys[str(feature)]].append(result[feature])
                 
             return output
-
 
     def prepare_features(self,features):
         
